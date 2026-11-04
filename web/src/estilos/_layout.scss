@@ -1,0 +1,84 @@
+@use 'variaveis' as v;
+@use 'mixins' as m;
+
+body {
+  background: v.$fundo;
+  color: v.$cinza-texto;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+h1, h2, h3, h4 {
+  color: #23301f;
+  font-weight: 700;
+}
+
+a { text-decoration: none; }
+
+.conteudo {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  min-height: 70vh;
+
+  @include m.a-partir-de(md) { padding: 1.5rem; }
+  @include m.a-partir-de(lg) { padding: 2rem 1.5rem; }
+}
+
+// ---------- Cabeçalho / navegação ----------
+.cabecalho {
+  background: v.$verde;
+  color: v.$branco;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+
+  .marca {
+    color: v.$branco;
+    font-weight: 700;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .nav-link {
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+
+    &:hover { color: v.$branco; }
+    &.ativo {
+      color: v.$branco;
+      border-bottom: 2px solid v.$dourado;
+    }
+  }
+}
+
+// ---------- Rodapé ----------
+.rodape {
+  background: #23301f;
+  color: rgba(255, 255, 255, 0.75);
+  padding: 2rem 1rem;
+  margin-top: 3rem;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+// ---------- Destaque da página inicial ----------
+.destaque {
+  background: linear-gradient(135deg, v.$verde 0%, v.$verde-claro 100%);
+  color: v.$branco;
+  border-radius: v.$raio;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+
+  h1 { color: v.$branco; font-size: 1.5rem; }
+
+  @include m.a-partir-de(md) {
+    padding: 2.5rem;
+    h1 { font-size: 2rem; }
+  }
+  @include m.a-partir-de(lg) {
+    h1 { font-size: 2.4rem; }
+  }
+}

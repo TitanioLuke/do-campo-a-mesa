@@ -1,0 +1,28 @@
+@use 'variaveis' as v;
+@use 'sass:map';
+
+// Mixin principal do Mobile First: acrescenta estilos A PARTIR de um breakpoint.
+@mixin a-partir-de($bp) {
+  @media (min-width: map.get(v.$breakpoints, $bp)) {
+    @content;
+  }
+}
+
+// Cartão branco reutilizável (produtos, painéis, formulários)
+@mixin cartao($padding: 1rem) {
+  background: v.$branco;
+  border: 1px solid v.$cinza-borda;
+  border-radius: v.$raio;
+  box-shadow: v.$sombra;
+  padding: $padding;
+}
+
+// Grelha responsiva: 1 coluna no telemóvel, mais colunas nos ecrãs maiores
+@mixin grelha($md: 2, $lg: 3, $xl: 4) {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+  @include a-partir-de(md) { grid-template-columns: repeat($md, 1fr); }
+  @include a-partir-de(lg) { grid-template-columns: repeat($lg, 1fr); }
+  @include a-partir-de(xl) { grid-template-columns: repeat($xl, 1fr); }
+}

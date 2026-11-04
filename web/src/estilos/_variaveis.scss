@@ -1,0 +1,33 @@
+// ---------------------------------------------------------------
+// Variáveis SASS — paleta, tipografia e breakpoints da aplicação
+// ---------------------------------------------------------------
+
+$verde: #2f5d3a;
+$verde-claro: #5c9a6b;
+$verde-muito-claro: #eef4ef;
+$terracota: #a94a26;
+$dourado: #c79a2e;
+$cinza-texto: #4a4a4a;
+$cinza-borda: #e3e3e0;
+$fundo: #faf9f6;
+$branco: #ffffff;
+
+// Estados das encomendas
+$estados: (
+  pendente: #b8860b,
+  confirmada: #2f6fa0,
+  pronta: #7b4ea0,
+  entregue: $verde,
+);
+
+$raio: 0.75rem;
+$sombra: 0 2px 10px rgba(0, 0, 0, 0.06);
+$sombra-forte: 0 6px 20px rgba(0, 0, 0, 0.12);
+
+// Mobile First: os estilos base são os do telemóvel.
+// Estes são os 3 breakpoints acrescentados por media queries.
+$breakpoints: (
+  md: 768px,
+  lg: 1024px,
+  xl: 1280px,
+);

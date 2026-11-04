@@ -1,0 +1,233 @@
+@use 'variaveis' as v;
+@use 'mixins' as m;
+@use 'sass:map';
+
+// ---------- Grelhas ----------
+.grelha-produtos { @include m.grelha(2, 3, 4); }
+.grelha-produtores { @include m.grelha(2, 3, 3); }
+.grelha-leiloes { @include m.grelha(2, 2, 3); }
+.grelha-indicadores { @include m.grelha(2, 4, 4); }
+
+// ---------- Cartão de produto ----------
+.cartao-produto {
+  @include m.cartao(0);
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: v.$sombra-forte;
+  }
+
+  .imagem {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    background: v.$verde-muito-claro;
+  }
+
+  .corpo {
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 0.35rem;
+  }
+
+  .titulo { font-size: 1rem; margin: 0; }
+
+  .produtor-nome {
+    font-size: 0.8rem;
+    color: #7a7a74;
+  }
+
+  .preco {
+    color: v.$verde;
+    font-weight: 700;
+    font-size: 1.15rem;
+  }
+}
+
+// Contador usado no carrinho e nos separadores do painel de administração
+.contador-carrinho {
+  display: inline-block;
+  background: v.$terracota;
+  color: v.$branco;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  margin-left: 0.35rem;
+}
+
+// ---------- Etiquetas ----------
+.etiqueta {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+.etiqueta-bio { color: v.$verde; background: v.$verde-muito-claro; }
+.etiqueta-epoca { color: v.$terracota; background: #fbf0ea; }
+
+// Uma classe por estado da encomenda, gerada a partir do mapa $estados
+@each $nome, $cor in v.$estados {
+  .estado-#{$nome} {
+    color: $cor;
+    background: rgba($cor, 0.1);
+    border-color: rgba($cor, 0.35);
+  }
+}
+
+// ---------- Painéis ----------
+.painel { @include m.cartao(1.25rem); }
+
+.indicador {
+  @include m.cartao(1rem);
+  text-align: center;
+
+  .valor { font-size: 1.6rem; font-weight: 700; color: v.$verde; }
+  .rotulo { font-size: 0.8rem; color: #7a7a74; }
+}
+
+// ---------- Sala de leilão ----------
+.painel-leilao {
+  @include m.cartao(1.25rem);
+
+  .valor-atual {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: v.$verde;
+    line-height: 1.1;
+
+    @include m.a-partir-de(md) { font-size: 2.8rem; }
+  }
+
+  .relogio {
+    font-variant-numeric: tabular-nums;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: v.$terracota;
+  }
+
+  .atalhos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+}
+
+.historico-licitacoes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 320px;
+  overflow-y: auto;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid v.$cinza-borda;
+    font-size: 0.9rem;
+
+    &:first-child { font-weight: 700; color: v.$verde; }
+  }
+}
+
+// ---------- Avaliações ----------
+.estrelas {
+  color: v.$dourado;
+  letter-spacing: 1px;
+}
+
+// ---------- Notificações (toasts) ----------
+.notificacoes {
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  @include m.a-partir-de(md) {
+    left: auto;
+    right: 1.5rem;
+    width: 340px;
+  }
+}
+
+.notificacao {
+  @include m.cartao(0.85rem);
+  border-left: 4px solid v.$verde;
+  box-shadow: v.$sombra-forte;
+  font-size: 0.9rem;
+  animation: entrar 0.25s ease;
+}
+
+@keyframes entrar {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+// ---------- Barra de filtros ----------
+.filtros {
+  @include m.cartao(1rem);
+  margin-bottom: 1.25rem;
+}
+
+// ---------- Mapa do produtor ----------
+.mapa {
+  width: 100%;
+  height: 220px;
+  border: 0;
+  border-radius: v.$raio;
+
+  @include m.a-partir-de(lg) { height: 300px; }
+}
+
+// ---------- Botões ----------
+.btn-verde {
+  background: v.$verde;
+  border-color: v.$verde;
+  color: v.$branco;
+
+  &:hover { background: #26492e; border-color: #26492e; color: v.$branco; }
+}
+
+.btn-terracota {
+  background: v.$terracota;
+  border-color: v.$terracota;
+  color: v.$branco;
+
+  &:hover { background: #8d3d1f; border-color: #8d3d1f; color: v.$branco; }
+}
+
+// ---------- Tabelas (painéis) ----------
+.tabela-simples {
+  width: 100%;
+  font-size: 0.9rem;
+
+  th {
+    text-align: left;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #8a8a84;
+    border-bottom: 1px solid v.$cinza-borda;
+    padding: 0.5rem 0.5rem 0.5rem 0;
+  }
+
+  td {
+    padding: 0.65rem 0.5rem 0.65rem 0;
+    border-bottom: 1px solid v.$cinza-borda;
+    vertical-align: middle;
+  }
+}
