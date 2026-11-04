@@ -5,3 +5,6 @@ dist/
 api/uploads/*
 !api/uploads/.gitkeep
 .claude/
+
+# Documento do enunciado, nao faz parte do codigo entregue
+Do_Campo_a_Mesa_Enunciado.pdf
