@@ -5,6 +5,10 @@ import { useAuth } from '../../contexto/AuthContext';
 import NavProdutor from './NavProdutor';
 import Contador from '../../componentes/Contador';
 
+// Colunas secundárias das tabelas: escondidas no telemóvel e visíveis a
+// partir de md (768 px), para os botões de ação caberem no ecrã pequeno.
+const SECUNDARIA = 'd-none d-md-table-cell';
+
 const VAZIO = { lote: '', descricao: '', precoBase: '', incremento: 5, duracaoMinutos: 30, imagem: '' };
 
 export default function MeusLeiloes() {
@@ -107,14 +111,14 @@ export default function MeusLeiloes() {
         <div className="table-responsive">
           <table className="tabela-simples">
             <thead>
-              <tr><th>Lote</th><th>Atual</th><th>Melhor licitação</th><th>Termina</th><th /></tr>
+              <tr><th>Lote</th><th>Atual</th><th className={SECUNDARIA}>Melhor licitação</th><th>Termina</th><th /></tr>
             </thead>
             <tbody>
               {leiloes.map((l) => (
                 <tr key={l._id}>
                   <td><Link to={`/leiloes/${l._id}`} className="text-dark fw-semibold">{l.lote}</Link></td>
                   <td>{euros(l.licitacaoAtual.valor)}</td>
-                  <td>{l.licitacaoAtual.nome || <span className="text-black-50">—</span>}</td>
+                  <td className={SECUNDARIA}>{l.licitacaoAtual.nome || <span className="text-black-50">—</span>}</td>
                   <td>
                     {l.estado === 'ativo' ? <Contador terminaEm={l.terminaEm} /> : <span className="etiqueta estado-entregue">terminado</span>}
                     <div className="small text-black-50">{dataPt(l.terminaEm)}</div>

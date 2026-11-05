@@ -7,6 +7,10 @@ const CATEGORIAS = ['Hortícolas', 'Fruta', 'Mel', 'Vinho', 'Queijo', 'Outros'];
 const UNIDADES = ['kg', 'un', 'L', 'dz', 'cx'];
 const EPOCAS = ['Primavera', 'Verão', 'Outono', 'Inverno', 'Todo o ano'];
 
+// Colunas secundárias das tabelas: escondidas no telemóvel e visíveis a
+// partir de md (768 px), para os botões de ação caberem no ecrã pequeno.
+const SECUNDARIA = 'd-none d-md-table-cell';
+
 const VAZIO = {
   nome: '', descricao: '', categoria: 'Hortícolas', preco: '', unidade: 'kg',
   stock: '', biologico: false, epoca: 'Todo o ano', imagem: '',
@@ -153,7 +157,7 @@ export default function MeusProdutos() {
         <div className="table-responsive">
           <table className="tabela-simples">
             <thead>
-              <tr><th>Produto</th><th>Categoria</th><th>Preço</th><th>Stock</th><th /></tr>
+              <tr><th>Produto</th><th className={SECUNDARIA}>Categoria</th><th>Preço</th><th>Stock</th><th /></tr>
             </thead>
             <tbody>
               {produtos.map((p) => (
@@ -162,7 +166,7 @@ export default function MeusProdutos() {
                     <strong>{p.nome}</strong>
                     {p.biologico && <span className="etiqueta etiqueta-bio ms-2">bio</span>}
                   </td>
-                  <td>{p.categoria}</td>
+                  <td className={SECUNDARIA}>{p.categoria}</td>
                   <td>{euros(p.preco)} / {p.unidade}</td>
                   <td className={p.stock < 5 ? 'text-danger fw-bold' : ''}>{p.stock}</td>
                   <td className="text-end">

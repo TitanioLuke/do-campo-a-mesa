@@ -6,6 +6,10 @@ import Contador from '../../componentes/Contador';
 import Estrelas from '../../componentes/Estrelas';
 import EtiquetaEstado from '../../componentes/EtiquetaEstado';
 
+// Colunas secundárias das tabelas: escondidas no telemóvel e visíveis a
+// partir de md (768 px), para os botões de ação caberem no ecrã pequeno.
+const SECUNDARIA = 'd-none d-md-table-cell';
+
 const SEPARADORES = [
   ['resumo', 'Resumo'],
   ['produtores', 'Validar produtores'],
@@ -182,14 +186,14 @@ export default function PainelAdmin() {
           <h2 className="h6">Leilões a decorrer</h2>
           <div className="table-responsive">
             <table className="tabela-simples">
-              <thead><tr><th>Lote</th><th>Produtor</th><th>Atual</th><th>Melhor licitação</th><th>Termina</th></tr></thead>
+              <thead><tr><th>Lote</th><th className={SECUNDARIA}>Produtor</th><th>Atual</th><th className={SECUNDARIA}>Melhor licitação</th><th>Termina</th></tr></thead>
               <tbody>
                 {leiloes.map((l) => (
                   <tr key={l._id}>
                     <td><Link to={`/leiloes/${l._id}`} className="text-dark fw-semibold">{l.lote}</Link></td>
-                    <td>{l.produtor?.nome}</td>
+                    <td className={SECUNDARIA}>{l.produtor?.nome}</td>
                     <td>{euros(l.licitacaoAtual.valor)}</td>
-                    <td>{l.licitacaoAtual.nome || '—'}</td>
+                    <td className={SECUNDARIA}>{l.licitacaoAtual.nome || '—'}</td>
                     <td><Contador terminaEm={l.terminaEm} /></td>
                   </tr>
                 ))}
@@ -206,15 +210,15 @@ export default function PainelAdmin() {
           <h2 className="h6">Utilizadores ({utilizadores.length})</h2>
           <div className="table-responsive">
             <table className="tabela-simples">
-              <thead><tr><th>Nome</th><th>Email</th><th>Papel</th><th>Estado</th><th>Registo</th></tr></thead>
+              <thead><tr><th>Nome</th><th className={SECUNDARIA}>Email</th><th>Papel</th><th>Estado</th><th className={SECUNDARIA}>Registo</th></tr></thead>
               <tbody>
                 {utilizadores.map((u) => (
                   <tr key={u._id}>
                     <td>{u.nome}</td>
-                    <td className="small">{u.email}</td>
+                    <td className={`small ${SECUNDARIA}`}>{u.email}</td>
                     <td>{u.papel}</td>
                     <td>{u.papel === 'produtor' ? <span className={`etiqueta estado-${u.aprovado === 'aprovado' ? 'entregue' : 'pendente'}`}>{u.aprovado}</span> : '—'}</td>
-                    <td className="small text-black-50">{dataPt(u.createdAt)}</td>
+                    <td className={`small text-black-50 ${SECUNDARIA}`}>{dataPt(u.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -229,13 +233,13 @@ export default function PainelAdmin() {
           <h2 className="h6">Últimas encomendas</h2>
           <div className="table-responsive">
             <table className="tabela-simples">
-              <thead><tr><th>Data</th><th>Comprador</th><th>Produtor</th><th>Total</th><th>Estado</th></tr></thead>
+              <thead><tr><th className={SECUNDARIA}>Data</th><th>Comprador</th><th className={SECUNDARIA}>Produtor</th><th>Total</th><th>Estado</th></tr></thead>
               <tbody>
                 {encomendas.map((e) => (
                   <tr key={e._id}>
-                    <td className="small text-black-50">{dataPt(e.createdAt)}</td>
+                    <td className={`small text-black-50 ${SECUNDARIA}`}>{dataPt(e.createdAt)}</td>
                     <td>{e.comprador?.nome}</td>
-                    <td>{e.produtor?.nome}</td>
+                    <td className={SECUNDARIA}>{e.produtor?.nome}</td>
                     <td>{euros(e.total)}</td>
                     <td><EtiquetaEstado estado={e.estado} /></td>
                   </tr>
