@@ -30,7 +30,7 @@ export default function PainelProdutor() {
     ['Vendas entregues', euros(dados.vendasTotais)],
     ['Encomendas', dados.totalEncomendas],
     ['Por confirmar', dados.encomendasPendentes],
-    ['Avaliação média', dados.numAvaliacoes ? `${dados.notaMedia} ★` : '—'],
+    ['Avaliação média', dados.numAvaliacoes ? `${dados.notaMedia} / 5` : '—'],
   ];
 
   return (

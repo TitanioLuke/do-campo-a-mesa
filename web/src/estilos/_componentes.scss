@@ -162,7 +162,11 @@
 // ---------- Avaliações ----------
 .estrelas {
   color: v.$dourado;
-  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+
+  svg { display: block; }
 }
 
 // ---------- Notificações (toasts) ----------

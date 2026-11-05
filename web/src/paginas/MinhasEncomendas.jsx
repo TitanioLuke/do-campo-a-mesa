@@ -6,6 +6,9 @@ import EtiquetaEstado from '../componentes/EtiquetaEstado';
 
 const PASSOS = ['pendente', 'confirmada', 'pronta', 'entregue'];
 
+// Dentro de uma <option> só cabe texto, por isso a nota é dada por palavras
+const NOTAS = [[5, 'Excelente'], [4, 'Bom'], [3, 'Razoável'], [2, 'Fraco'], [1, 'Mau']];
+
 export default function MinhasEncomendas() {
   const [encomendas, setEncomendas] = useState([]);
   // O que está a ser avaliado: { produto } para um produto, { produtor } para o produtor
@@ -161,7 +164,7 @@ export default function MinhasEncomendas() {
             <div className="mb-2">
               <label className="form-label small mb-1" htmlFor="nota">Nota</label>
               <select id="nota" className="form-select" value={nota} onChange={(e) => setNota(Number(e.target.value))}>
-                {[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{'★'.repeat(n)} ({n})</option>)}
+                {NOTAS.map(([n, texto]) => <option key={n} value={n}>{n} — {texto}</option>)}
               </select>
             </div>
             <div className="mb-2">
