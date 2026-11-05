@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api, euros } from '../servicos/api';
 import { useCarrinho } from '../contexto/CarrinhoContext';
 import { useAuth } from '../contexto/AuthContext';
+import { useAvisos } from '../contexto/AvisosContext';
 
 export default function Carrinho() {
   const { linhas, alterarQuantidade, remover, limpar, total } = useCarrinho();
@@ -10,21 +11,25 @@ export default function Carrinho() {
   const navegar = useNavigate();
 
   const [entrega, setEntrega] = useState({ tipo: 'levantamento', morada: '' });
-  const [erro, setErro] = useState('');
+  const { sucesso, erro } = useAvisos();
   const [aEnviar, setAEnviar] = useState(false);
 
   async function finalizar() {
-    setErro('');
     setAEnviar(true);
     try {
-      await api.post('/orders', {
+      const encomendas = await api.post('/orders', {
         linhas: linhas.map((l) => ({ produto: l.produto._id, quantidade: l.quantidade })),
         entrega,
       });
       limpar();
+      sucesso(
+        encomendas.length > 1
+          ? `${encomendas.length} encomendas criadas, uma por produtor.`
+          : 'Encomenda criada. O produtor vai confirmá-la.'
+      );
       navegar('/encomendas');
     } catch (e) {
-      setErro(e.message);
+      erro(e.message);
     } finally {
       setAEnviar(false);
     }
@@ -122,8 +127,6 @@ export default function Carrinho() {
                 onChange={(e) => setEntrega({ ...entrega, morada: e.target.value })}
               />
             )}
-
-            {erro && <div className="alert alert-danger py-2">{erro}</div>}
 
             {!temSessao ? (
               <Link className="btn btn-verde w-100" to="/login" state={{ de: '/carrinho' }}>

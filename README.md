@@ -165,7 +165,11 @@ ainda não foi validado: é o que permite demonstrar a aprovação no painel do 
   só depois de ter uma encomenda entregue, e só uma vez por produto / por produtor.
 - Denunciar avaliações para moderação.
 - Entrar na sala de um leilão e licitar: contagem decrescente, número de participantes,
-  histórico de licitações, atalhos +5 / +10 / +25 € e validação do valor mínimo no servidor.
+  histórico de licitações, atalhos para os valores seguintes e validação do mínimo no
+  servidor. Os atalhos apenas **preenchem** o campo; a licitação só sai depois de
+  confirmada numa janela que diz ao que o comprador se está a comprometer.
+- **Perfil próprio** com os seus dados e um resumo das compras (encomendas, produtores a
+  quem comprou e total gasto).
 
 ### Produtor
 
@@ -371,7 +375,22 @@ Todos os pedidos passam por `web/src/servicos/api.js`, que acrescenta o cabeçal
 `Authorization: Bearer <token>`, trata o `204 No Content` e transforma os erros da API em
 exceções com a mensagem em português.
 
-### 9.1. A lista de concelhos
+### 9.1. Decisões de interface
+
+Três coisas que valem por toda a aplicação:
+
+- **Avisos num sítio só.** `AvisosContext` guarda uma fila de avisos temporários e
+  qualquer página chama `sucesso()` ou `erro()`. O mesmo mecanismo serve os eventos que
+  chegam pelo WebSocket e as confirmações dos formulários, por isso não há páginas com
+  caixas de erro e outras em que o erro se perde.
+- **Janelas modais** para o que precisa de uma decisão consciente: confirmar uma licitação
+  e escrever uma avaliação. Fecham com Escape ou com um clique fora, e bloqueiam o deslize
+  da página por trás.
+- **Rodapé colado ao fundo**, com `#root` em `flex-column` e o conteúdo a crescer
+  (`flex: 1 0 auto`). Nas páginas curtas o rodapé fica no fundo do ecrã em vez de deixar
+  uma faixa branca por baixo.
+
+### 9.2. A lista de concelhos
 
 A localidade deixou de ser um campo de texto livre. `web/src/dados/concelhos.js` tem os
 **308 concelhos de Portugal**, com o distrito e as coordenadas do centro, extraídos da
@@ -617,19 +636,36 @@ escrita sobrepunha-se à primeira e um comprador ficava com a licitação "perdi
 Testado com dois clientes a enviar 65 € no mesmo instante: uma licitação foi aceite, a outra
 recebeu `recusada`, e o estado no servidor e nos dois clientes ficou igual.
 
-### 14.3. Relógio sincronizado
+### 14.3. O que uma licitação compromete (e onde entra o dinheiro)
+
+A plataforma **não tem pagamentos online**. Nem nas encomendas, nem nos leilões: o
+pagamento é sempre combinado diretamente com o produtor, no levantamento ou na entrega.
+Foi uma decisão deliberada — integrar um gateway de pagamentos traria obrigações legais e
+de segurança (dados de cartão, PCI-DSS, estornos) que estão muito para lá do âmbito do
+trabalho, e nenhum dos oito passos do enunciado o pede.
+
+Por isso, licitar não movimenta dinheiro: é um **compromisso de compra**. Quem tiver a
+licitação mais alta no fim do leilão fica comprometido a comprar o lote por esse valor, e
+o produtor contacta-o para combinar o resto. A interface diz isto em dois sítios — por
+baixo do formulário e na janela de confirmação — porque é precisamente a dúvida que um
+utilizador tem ao ver um botão que aumenta o valor em 25 €.
+
+É também por isto que os atalhos deixaram de licitar sozinhos: com um clique a valer um
+compromisso de compra, o passo de confirmação não é cerimónia, é necessário.
+
+### 14.4. Relógio sincronizado
 
 O servidor envia apenas `terminaEm` (uma data absoluta). É cada cliente que calcula o tempo que
 falta, de segundo a segundo, no componente `Contador`. Assim não é preciso sincronizar
 contadores entre clientes: todos derivam o mesmo valor da mesma data.
 
-### 14.4. Fecho automático
+### 14.5. Fecho automático
 
 Um `setInterval` de 5 segundos procura leilões ativos cuja data de fim já passou
 (`terminaEm: { $lt: new Date() }`), marca-os como `terminado` e avisa a sala, o vencedor
 (`leilao-ganho`) e o produtor (`leilao-fechado`).
 
-### 14.5. Notificações de encomendas
+### 14.6. Notificações de encomendas
 
 Quando o produtor muda o estado de uma encomenda, a rota REST usa o `io` para avisar o comprador
 na sua sala pessoal:

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { API_URL } from '../servicos/api';
 import { useAuth } from './AuthContext';
+import { useAvisos } from './AvisosContext';
 
 /**
  * Uma única ligação WebSocket por utilizador, partilhada por toda a aplicação.
@@ -12,15 +13,9 @@ const SocketContext = createContext(null);
 
 export function SocketProvider({ children }) {
   const { temSessao, utilizador } = useAuth();
+  const { notificar } = useAvisos(); // os eventos do servidor aparecem como avisos
   const socketRef = useRef(null);
   const [ligado, setLigado] = useState(false);
-  const [notificacoes, setNotificacoes] = useState([]);
-
-  function notificar(texto) {
-    const id = Date.now() + Math.random();
-    setNotificacoes((atuais) => [...atuais, { id, texto }]);
-    setTimeout(() => setNotificacoes((atuais) => atuais.filter((n) => n.id !== id)), 6000);
-  }
 
   useEffect(() => {
     if (!temSessao) {
@@ -38,29 +33,28 @@ export function SocketProvider({ children }) {
 
     // --- Notificações da sala pessoal ---
     socket.on('encomenda-atualizada', ({ estado, produtor }) =>
-      notificar(`A sua encomenda em ${produtor} passou a "${estado}".`)
+      notificar(`A sua encomenda em ${produtor} passou a "${estado}".`, 'info')
     );
     socket.on('nova-encomenda', ({ total }) =>
-      notificar(`Nova encomenda recebida no valor de ${total} €.`)
+      notificar(`Nova encomenda recebida no valor de ${total} €.`, 'sucesso')
     );
-    socket.on('leilao-ganho', ({ lote, valor }) => notificar(`Ganhou o leilão "${lote}" por ${valor} €!`));
+    socket.on('leilao-ganho', ({ lote, valor }) =>
+      notificar(`Ganhou o leilão "${lote}" por ${valor} €!`, 'sucesso')
+    );
     socket.on('leilao-fechado', ({ lote, valor, comprador }) =>
-      notificar(comprador ? `Leilão "${lote}" fechado: ${valor} € (${comprador}).` : `Leilão "${lote}" terminou sem licitações.`)
+      notificar(
+        comprador ? `Leilão "${lote}" fechado: ${valor} € (${comprador}).` : `Leilão "${lote}" terminou sem licitações.`,
+        'info'
+      )
     );
     socket.on('registo-validado', ({ aprovado }) =>
-      notificar(`O administrador marcou o seu registo como "${aprovado}".`)
+      notificar(`O administrador marcou o seu registo como "${aprovado}".`, aprovado === 'aprovado' ? 'sucesso' : 'erro')
     );
 
     return () => socket.disconnect(); // fecha a ligação ao sair / terminar sessão
-  }, [temSessao, utilizador?._id]);
+  }, [temSessao, utilizador?._id, notificar]);
 
-  const valor = {
-    socket: socketRef.current,
-    ligado,
-    notificacoes,
-    notificar,
-    fechar: (id) => setNotificacoes((atuais) => atuais.filter((n) => n.id !== id)),
-  };
+  const valor = { socket: socketRef.current, ligado };
 
   return <SocketContext.Provider value={valor}>{children}</SocketContext.Provider>;
 }

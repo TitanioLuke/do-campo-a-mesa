@@ -1,25 +1,31 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexto/AuthContext';
 import { coordenadasDe } from '../dados/concelhos';
 import SelectLocalidade from '../componentes/SelectLocalidade';
+import CampoPassword from '../componentes/CampoPassword';
+import { useAvisos } from '../contexto/AvisosContext';
 
 export default function Registo() {
   const [dados, setDados] = useState({
     nome: '', email: '', password: '', papel: 'comprador',
     localidade: '', descricao: '', telefone: '',
   });
-  const [erro, setErro] = useState('');
   const [aEnviar, setAEnviar] = useState(false);
 
-  const { registar } = useAuth();
+  const { registar, temSessao, papel } = useAuth();
+  const { sucesso, erro } = useAvisos();
   const navegar = useNavigate();
 
   const mudar = (campo) => (e) => setDados({ ...dados, [campo]: e.target.value });
 
+  // Quem já tem sessão iniciada não precisa do formulário de registo
+  if (temSessao) {
+    return <Navigate to={{ produtor: '/produtor', admin: '/admin' }[papel] || '/'} replace />;
+  }
+
   async function submeter(evento) {
     evento.preventDefault();
-    setErro('');
     setAEnviar(true);
     try {
       const corpo = { ...dados };
@@ -30,9 +36,10 @@ export default function Registo() {
         Object.assign(corpo, coordenadasDe(corpo.localidade) ?? {});
       }
       const utilizador = await registar(corpo);
-      navegar(utilizador.papel === 'produtor' ? '/produtor' : '/');
+      sucesso(`Conta criada. Bem-vindo, ${utilizador.nome}.`);
+      navegar(utilizador.papel === 'produtor' ? '/produtor' : '/', { replace: true });
     } catch (e) {
-      setErro(e.message);
+      erro(e.message);
     } finally {
       setAEnviar(false);
     }
@@ -72,7 +79,14 @@ export default function Registo() {
               </div>
               <div className="col-12 col-md-6">
                 <label className="form-label" htmlFor="password">Password (mín. 6 caracteres)</label>
-                <input id="password" type="password" className="form-control" required minLength={6} value={dados.password} onChange={mudar('password')} />
+                <CampoPassword
+                  id="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={6}
+                  valor={dados.password}
+                  aoMudar={(valor) => setDados({ ...dados, password: valor })}
+                />
               </div>
 
               {dados.papel === 'produtor' && (
@@ -104,8 +118,6 @@ export default function Registo() {
                 </>
               )}
             </div>
-
-            {erro && <div className="alert alert-danger py-2 mt-3">{erro}</div>}
 
             <button className="btn btn-verde w-100 mt-3" disabled={aEnviar}>
               {aEnviar ? 'A criar conta…' : 'Criar conta'}

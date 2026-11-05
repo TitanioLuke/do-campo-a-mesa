@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, dataPt, euros } from '../servicos/api';
 import { useSocket } from '../contexto/SocketContext';
+import { useAvisos } from '../contexto/AvisosContext';
 import EtiquetaEstado from '../componentes/EtiquetaEstado';
+import Modal from '../componentes/Modal';
 
 const PASSOS = ['pendente', 'confirmada', 'pronta', 'entregue'];
 
@@ -15,12 +17,14 @@ export default function MinhasEncomendas() {
   const [avaliacao, setAvaliacao] = useState(null);
   const [nota, setNota] = useState(5);
   const [comentario, setComentario] = useState('');
-  const [aviso, setAviso] = useState('');
+  const [aEnviar, setAEnviar] = useState(false);
+
   const { socket } = useSocket();
+  const { sucesso, erro } = useAvisos();
 
   const carregar = useCallback(() => {
-    api.get('/orders').then(setEncomendas).catch(() => {});
-  }, []);
+    api.get('/orders').then(setEncomendas).catch((e) => erro(e.message));
+  }, [erro]);
 
   useEffect(carregar, [carregar]);
 
@@ -39,33 +43,33 @@ export default function MinhasEncomendas() {
     setAvaliacao(alvo);
     setNota(5);
     setComentario('');
-    setAviso('');
   }
 
   async function enviarAvaliacao(evento) {
     evento.preventDefault();
+    setAEnviar(true);
     try {
       // A API aceita `produto` ou `produtor`: enviamos só o que estamos a avaliar
       const alvo = avaliacao.produto ? { produto: avaliacao.produto } : { produtor: avaliacao.produtor };
       await api.post('/reviews', { ...alvo, nota, comentario });
 
-      setAviso(`Avaliação de "${avaliacao.titulo}" registada. Obrigado!`);
+      sucesso(`Avaliação de "${avaliacao.titulo}" registada. Obrigado!`);
       setAvaliacao(null);
-      setComentario('');
-      setNota(5);
     } catch (e) {
-      setAviso(e.message);
+      erro(e.message);
+    } finally {
+      setAEnviar(false);
     }
   }
 
   return (
     <>
       <h1 className="h4 mb-3">As minhas encomendas</h1>
-      {aviso && <div className="alert alert-info py-2">{aviso}</div>}
 
       {encomendas.length === 0 && (
-        <div className="alert alert-light border text-center">
-          Ainda não fez encomendas. <Link to="/">Ver catálogo</Link>
+        <div className="painel text-center py-5">
+          <p className="h5 mb-2">Ainda não fez encomendas.</p>
+          <Link className="btn btn-verde" to="/">Ver catálogo</Link>
         </div>
       )}
 
@@ -153,32 +157,43 @@ export default function MinhasEncomendas() {
         ))}
       </div>
 
-      {/* Formulário de avaliação (aparece ao carregar num dos botões "Avaliar") */}
       {avaliacao && (
-        <div className="painel mt-4">
-          <h2 className="h6">
-            Avaliar {avaliacao.produto ? 'o produto' : 'o produtor'} “{avaliacao.titulo}”
-          </h2>
-
+        <Modal
+          titulo={`Avaliar ${avaliacao.produto ? 'o produto' : 'o produtor'} “${avaliacao.titulo}”`}
+          aoFechar={() => setAvaliacao(null)}
+        >
           <form onSubmit={enviarAvaliacao}>
-            <div className="mb-2">
+            <div className="mb-3">
               <label className="form-label small mb-1" htmlFor="nota">Nota</label>
               <select id="nota" className="form-select" value={nota} onChange={(e) => setNota(Number(e.target.value))}>
                 {NOTAS.map(([n, texto]) => <option key={n} value={n}>{n} — {texto}</option>)}
               </select>
             </div>
-            <div className="mb-2">
+
+            <div className="mb-3">
               <label className="form-label small mb-1" htmlFor="comentario">
                 {avaliacao.produto ? 'Comentário sobre o produto' : 'Comentário sobre o atendimento e a entrega'}
               </label>
-              <textarea id="comentario" className="form-control" rows="2" maxLength={500} value={comentario} onChange={(e) => setComentario(e.target.value)} />
+              <textarea
+                id="comentario"
+                className="form-control"
+                rows="3"
+                maxLength={500}
+                value={comentario}
+                onChange={(e) => setComentario(e.target.value)}
+              />
             </div>
-            <div className="d-flex gap-2">
-              <button className="btn btn-verde">Enviar avaliação</button>
-              <button type="button" className="btn btn-outline-secondary" onClick={() => setAvaliacao(null)}>Cancelar</button>
+
+            <div className="d-flex gap-2 justify-content-end">
+              <button type="button" className="btn btn-outline-secondary" onClick={() => setAvaliacao(null)}>
+                Cancelar
+              </button>
+              <button className="btn btn-verde" disabled={aEnviar}>
+                {aEnviar ? 'A enviar…' : 'Enviar avaliação'}
+              </button>
             </div>
           </form>
-        </div>
+        </Modal>
       )}
     </>
   );

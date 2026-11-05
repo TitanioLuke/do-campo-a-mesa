@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../servicos/api';
 import { useCarrinho } from '../contexto/CarrinhoContext';
 import { useAuth } from '../contexto/AuthContext';
+import { useAvisos } from '../contexto/AvisosContext';
 import CartaoProduto from '../componentes/CartaoProduto';
 import CartaoLeilao from '../componentes/CartaoLeilao';
 import FiltrosCatalogo from '../componentes/FiltrosCatalogo';
@@ -17,10 +18,10 @@ export default function Catalogo() {
   const [leiloes, setLeiloes] = useState([]);
   const [filtro, setFiltro] = useState(FILTRO_INICIAL);
   const [aCarregar, setACarregar] = useState(true);
-  const [erro, setErro] = useState('');
 
   const { adicionar } = useCarrinho();
   const { papel } = useAuth();
+  const { erro } = useAvisos();
 
   // Leilões em destaque e lista de produtores para o filtro (só ao abrir a página)
   useEffect(() => {
@@ -45,12 +46,12 @@ export default function Catalogo() {
 
       api.get(`/products?${parametros}`)
         .then(setProdutos)
-        .catch((e) => setErro(e.message))
+        .catch((e) => erro(e.message))
         .finally(() => setACarregar(false));
     }, 300);
 
     return () => clearTimeout(temporizador);
-  }, [filtro]);
+  }, [filtro, erro]);
 
   const podeComprar = papel === 'comprador' || papel === 'visitante';
 
@@ -85,7 +86,6 @@ export default function Catalogo() {
         numResultados={produtos.length}
       />
 
-      {erro && <div className="alert alert-danger">{erro}</div>}
       {aCarregar && <p className="text-center py-4 text-black-50">A carregar produtos…</p>}
 
       {!aCarregar && produtos.length === 0 && (

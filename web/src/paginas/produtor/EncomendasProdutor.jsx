@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, dataPt, euros } from '../../servicos/api';
 import { useSocket } from '../../contexto/SocketContext';
+import { useAvisos } from '../../contexto/AvisosContext';
 import NavProdutor from './NavProdutor';
 import EtiquetaEstado from '../../componentes/EtiquetaEstado';
 
@@ -9,12 +10,12 @@ const SEGUINTE = { pendente: 'confirmada', confirmada: 'pronta', pronta: 'entreg
 export default function EncomendasProdutor() {
   const [encomendas, setEncomendas] = useState([]);
   const [filtro, setFiltro] = useState('');
-  const [erro, setErro] = useState('');
   const { socket } = useSocket();
+  const { sucesso, erro } = useAvisos();
 
   const carregar = useCallback(() => {
-    api.get(`/orders${filtro ? `?estado=${filtro}` : ''}`).then(setEncomendas).catch((e) => setErro(e.message));
-  }, [filtro]);
+    api.get(`/orders${filtro ? `?estado=${filtro}` : ''}`).then(setEncomendas).catch((e) => erro(e.message));
+  }, [filtro, erro]);
 
   useEffect(carregar, [carregar]);
 
@@ -27,14 +28,14 @@ export default function EncomendasProdutor() {
 
   /** Avança o estado; a API notifica o comprador pelo WebSocket. */
   async function avancar(encomenda) {
-    setErro('');
     try {
       const atualizada = await api.patch(`/orders/${encomenda._id}/estado`, {
         estado: SEGUINTE[encomenda.estado],
       });
       setEncomendas((atuais) => atuais.map((e) => (e._id === atualizada._id ? { ...e, estado: atualizada.estado } : e)));
+      sucesso(`Encomenda de ${encomenda.comprador?.nome} marcada como "${atualizada.estado}".`);
     } catch (e) {
-      setErro(e.message);
+      erro(e.message);
     }
   }
 
@@ -50,8 +51,6 @@ export default function EncomendasProdutor() {
         </select>
         <span className="small text-black-50">{encomendas.length} encomenda(s)</span>
       </div>
-
-      {erro && <div className="alert alert-danger py-2">{erro}</div>}
 
       {encomendas.length === 0 ? (
         <div className="alert alert-light border text-center">Ainda não recebeu encomendas.</div>

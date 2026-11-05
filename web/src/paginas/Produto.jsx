@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api, dataPt, euros } from '../servicos/api';
 import { useCarrinho } from '../contexto/CarrinhoContext';
 import { useAuth } from '../contexto/AuthContext';
+import { useAvisos } from '../contexto/AvisosContext';
 import Estrelas from '../componentes/Estrelas';
 
 export default function Produto() {
@@ -11,10 +12,10 @@ export default function Produto() {
   const [avaliacoes, setAvaliacoes] = useState([]);
   const [quantidade, setQuantidade] = useState(1);
   const [erro, setErro] = useState('');
-  const [aviso, setAviso] = useState('');
 
   const { adicionar } = useCarrinho();
   const { papel, temSessao } = useAuth();
+  const { sucesso, erro: avisarErro } = useAvisos();
 
   useEffect(() => {
     api.get(`/products/${id}`).then(setProduto).catch((e) => setErro(e.message));
@@ -22,8 +23,12 @@ export default function Produto() {
   }, [id]);
 
   async function denunciar(avaliacaoId) {
-    await api.post(`/reviews/${avaliacaoId}/denunciar`);
-    setAviso('Avaliação enviada para moderação do administrador.');
+    try {
+      await api.post(`/reviews/${avaliacaoId}/denunciar`);
+      sucesso('Avaliação enviada para moderação do administrador.');
+    } catch (e) {
+      avisarErro(e.message);
+    }
   }
 
   if (erro) return <div className="alert alert-danger">{erro}</div>;
@@ -89,14 +94,16 @@ export default function Produto() {
                 />
                 <button
                   className="btn btn-verde flex-grow-1"
-                  onClick={() => { adicionar(produto, quantidade); setAviso('Produto adicionado ao carrinho.'); }}
+                  onClick={() => {
+                    adicionar(produto, quantidade);
+                    sucesso(`${quantidade} × ${produto.nome} no carrinho.`);
+                  }}
                 >
                   Adicionar ao carrinho
                 </button>
               </div>
             )}
 
-            {aviso && <div className="alert alert-success mt-3 mb-0 py-2">{aviso}</div>}
           </div>
         </div>
       </div>

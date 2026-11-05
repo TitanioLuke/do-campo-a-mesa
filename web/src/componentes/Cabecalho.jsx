@@ -4,6 +4,9 @@ import { useAuth } from '../contexto/AuthContext';
 import { useCarrinho } from '../contexto/CarrinhoContext';
 import { useSocket } from '../contexto/SocketContext';
 
+// Para onde o nome do utilizador leva, conforme o papel
+const PERFIL = { comprador: '/perfil', produtor: '/produtor/perfil' };
+
 /**
  * Navegação principal. O menu é fechado por omissão (telemóvel) e abre-se
  * com o botão; a partir de md fica sempre visível (classes do Bootstrap).
@@ -70,10 +73,22 @@ export default function Cabecalho() {
             {utilizador ? (
               <>
                 <li className="nav-item">
-                  <span className="nav-link" title={ligado ? 'Ligado em tempo real' : 'Sem ligação em tempo real'}>
-                    <span className={`ponto${ligado ? ' ponto-ligado' : ''}`} />
-                    {utilizador.nome}
-                  </span>
+                  {PERFIL[papel] ? (
+                    <NavLink
+                      to={PERFIL[papel]}
+                      className={classe}
+                      onClick={fechar}
+                      title={ligado ? 'Ligado em tempo real' : 'Sem ligação em tempo real'}
+                    >
+                      <span className={`ponto${ligado ? ' ponto-ligado' : ''}`} />
+                      {utilizador.nome}
+                    </NavLink>
+                  ) : (
+                    <span className="nav-link" title={ligado ? 'Ligado em tempo real' : 'Sem ligação em tempo real'}>
+                      <span className={`ponto${ligado ? ' ponto-ligado' : ''}`} />
+                      {utilizador.nome}
+                    </span>
+                  )}
                 </li>
                 <li className="nav-item">
                   <button className="btn btn-sm btn-outline-light ms-md-2 my-2 my-md-0" onClick={terminarSessao}>

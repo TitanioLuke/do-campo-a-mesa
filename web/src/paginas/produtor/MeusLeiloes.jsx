@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, dataPt, euros } from '../../servicos/api';
 import { useAuth } from '../../contexto/AuthContext';
+import { useAvisos } from '../../contexto/AvisosContext';
 import NavProdutor from './NavProdutor';
 import Contador from '../../componentes/Contador';
 
@@ -15,8 +16,7 @@ export default function MeusLeiloes() {
   const { utilizador } = useAuth();
   const [leiloes, setLeiloes] = useState([]);
   const [form, setForm] = useState(VAZIO);
-  const [erro, setErro] = useState('');
-  const [aviso, setAviso] = useState('');
+  const { sucesso, erro } = useAvisos();
 
   const carregar = () =>
     api.get(`/auctions?produtor=${utilizador._id}`).then(setLeiloes).catch(() => {});
@@ -30,14 +30,14 @@ export default function MeusLeiloes() {
     if (!ficheiro) return;
     try {
       setForm({ ...form, imagem: await api.upload(ficheiro) });
+      sucesso('Fotografia carregada.');
     } catch (e) {
-      setErro(e.message);
+      erro(e.message);
     }
   }
 
   async function submeter(evento) {
     evento.preventDefault();
-    setErro(''); setAviso('');
     try {
       await api.post('/auctions', {
         ...form,
@@ -45,18 +45,23 @@ export default function MeusLeiloes() {
         incremento: Number(form.incremento),
         duracaoMinutos: Number(form.duracaoMinutos),
       });
-      setAviso('Leilão criado e já a decorrer.');
+      sucesso(`Leilão "${form.lote}" criado e já a decorrer.`);
       setForm(VAZIO);
       carregar();
     } catch (e) {
-      setErro(e.message);
+      erro(e.message);
     }
   }
 
   async function apagar(leilao) {
     if (!confirm(`Apagar o leilão "${leilao.lote}"?`)) return;
-    await api.del(`/auctions/${leilao._id}`);
-    carregar();
+    try {
+      await api.del(`/auctions/${leilao._id}`);
+      sucesso('Leilão apagado.');
+      carregar();
+    } catch (e) {
+      erro(e.message);
+    }
   }
 
   return (
@@ -96,9 +101,6 @@ export default function MeusLeiloes() {
           <div className="col-12 col-md-4 d-flex align-items-end">
             {form.imagem && <img src={form.imagem} alt="Pré-visualização" style={{ height: 60, borderRadius: 8 }} />}
           </div>
-
-          {erro && <div className="col-12"><div className="alert alert-danger py-2 mb-0">{erro}</div></div>}
-          {aviso && <div className="col-12"><div className="alert alert-success py-2 mb-0">{aviso}</div></div>}
 
           <div className="col-12">
             <button className="btn btn-terracota">Começar leilão</button>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, euros } from '../../servicos/api';
 import { useAuth } from '../../contexto/AuthContext';
+import { useAvisos } from '../../contexto/AvisosContext';
 import NavProdutor from './NavProdutor';
 
 const CATEGORIAS = ['Hortícolas', 'Fruta', 'Mel', 'Vinho', 'Queijo', 'Outros'];
@@ -21,8 +22,7 @@ export default function MeusProdutos() {
   const [produtos, setProdutos] = useState([]);
   const [form, setForm] = useState(VAZIO);
   const [aEditar, setAEditar] = useState(null); // _id do produto em edição
-  const [erro, setErro] = useState('');
-  const [aviso, setAviso] = useState('');
+  const { sucesso, erro } = useAvisos();
 
   const carregar = () =>
     api.get(`/products?produtor=${utilizador._id}`).then(setProdutos).catch(() => {});
@@ -37,29 +37,29 @@ export default function MeusProdutos() {
     if (!ficheiro) return;
     try {
       setForm({ ...form, imagem: await api.upload(ficheiro) });
+      sucesso('Fotografia carregada.');
     } catch (e) {
-      setErro(e.message);
+      erro(e.message);
     }
   }
 
   async function submeter(evento) {
     evento.preventDefault();
-    setErro(''); setAviso('');
     const corpo = { ...form, preco: Number(form.preco), stock: Number(form.stock || 0) };
 
     try {
       if (aEditar) {
         await api.put(`/products/${aEditar}`, corpo);
-        setAviso('Produto atualizado.');
+        sucesso(`"${corpo.nome}" atualizado.`);
       } else {
         await api.post('/products', corpo);
-        setAviso('Produto criado.');
+        sucesso(`"${corpo.nome}" criado.`);
       }
       setForm(VAZIO);
       setAEditar(null);
       carregar();
     } catch (e) {
-      setErro(e.message);
+      erro(e.message);
     }
   }
 
@@ -75,8 +75,13 @@ export default function MeusProdutos() {
 
   async function apagar(produto) {
     if (!confirm(`Apagar "${produto.nome}"?`)) return;
-    await api.del(`/products/${produto._id}`);
-    carregar();
+    try {
+      await api.del(`/products/${produto._id}`);
+      sucesso(`"${produto.nome}" apagado.`);
+      carregar();
+    } catch (e) {
+      erro(e.message);
+    }
   }
 
   return (
@@ -137,9 +142,6 @@ export default function MeusProdutos() {
           <div className="col-12 col-md-4 d-flex align-items-end">
             {form.imagem && <img src={form.imagem} alt="Pré-visualização" style={{ height: 60, borderRadius: 8 }} />}
           </div>
-
-          {erro && <div className="col-12"><div className="alert alert-danger py-2 mb-0">{erro}</div></div>}
-          {aviso && <div className="col-12"><div className="alert alert-success py-2 mb-0">{aviso}</div></div>}
 
           <div className="col-12 d-flex gap-2">
             <button className="btn btn-verde">{aEditar ? 'Guardar alterações' : 'Criar produto'}</button>

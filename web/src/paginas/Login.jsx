@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexto/AuthContext';
+import { useAvisos } from '../contexto/AvisosContext';
+import CampoPassword from '../componentes/CampoPassword';
 
 const CONTAS = [
   ['Comprador', 'ana@dcm.pt'],
@@ -8,26 +10,35 @@ const CONTAS = [
   ['Administrador', 'admin@dcm.pt'],
 ];
 
+/** Para onde cada papel vai depois de entrar. */
+const DESTINOS = { produtor: '/produtor', admin: '/admin' };
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [erro, setErro] = useState('');
   const [aEnviar, setAEnviar] = useState(false);
 
-  const { entrar } = useAuth();
+  const { entrar, temSessao, papel } = useAuth();
+  const { sucesso, erro } = useAvisos();
   const navegar = useNavigate();
   const localizacao = useLocation();
 
+  // Quem já tem sessão não tem nada a fazer aqui — por exemplo, ao carregar
+  // na seta de voltar atrás depois de entrar.
+  if (temSessao) return <Navigate to={DESTINOS[papel] || '/'} replace />;
+
   async function submeter(evento) {
     evento.preventDefault();
-    setErro('');
     setAEnviar(true);
     try {
       const utilizador = await entrar(email, password);
-      const destinos = { produtor: '/produtor', admin: '/admin' };
-      navegar(localizacao.state?.de || destinos[utilizador.papel] || '/');
+      sucesso(`Bem-vindo, ${utilizador.nome}.`);
+
+      // `replace` troca o /login no histórico em vez de empilhar: a seta de
+      // voltar atrás leva à página anterior, não a um ecrã de entrada inútil.
+      navegar(localizacao.state?.de || DESTINOS[utilizador.papel] || '/', { replace: true });
     } catch (e) {
-      setErro(e.message);
+      erro(e.message);
     } finally {
       setAEnviar(false);
     }
@@ -42,15 +53,27 @@ export default function Login() {
           <form onSubmit={submeter}>
             <div className="mb-3">
               <label className="form-label" htmlFor="email">Email</label>
-              <input id="email" type="email" className="form-control" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <input
+                id="email"
+                type="email"
+                className="form-control"
+                autoComplete="username"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
 
             <div className="mb-3">
               <label className="form-label" htmlFor="password">Password</label>
-              <input id="password" type="password" className="form-control" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              <CampoPassword
+                id="password"
+                autoComplete="current-password"
+                required
+                valor={password}
+                aoMudar={setPassword}
+              />
             </div>
-
-            {erro && <div className="alert alert-danger py-2">{erro}</div>}
 
             <button className="btn btn-verde w-100" disabled={aEnviar}>
               {aEnviar ? 'A entrar…' : 'Entrar'}

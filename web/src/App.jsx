@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { AuthProvider } from './contexto/AuthContext';
 import { CarrinhoProvider } from './contexto/CarrinhoContext';
+import { AvisosProvider } from './contexto/AvisosContext';
 import { SocketProvider } from './contexto/SocketContext';
 
 import Cabecalho from './componentes/Cabecalho';
@@ -19,6 +20,7 @@ import Login from './paginas/Login';
 import Registo from './paginas/Registo';
 import Carrinho from './paginas/Carrinho';
 import MinhasEncomendas from './paginas/MinhasEncomendas';
+import PerfilComprador from './paginas/PerfilComprador';
 import NaoEncontrado from './paginas/NaoEncontrado';
 
 import PainelProdutor from './paginas/produtor/PainelProdutor';
@@ -35,52 +37,58 @@ import PainelAdmin from './paginas/admin/PainelAdmin';
 export default function App() {
   return (
     <AuthProvider>
-      <SocketProvider>
-        <CarrinhoProvider>
-          <BrowserRouter>
-            <Cabecalho />
+      <AvisosProvider>
+        <SocketProvider>
+          <CarrinhoProvider>
+            <BrowserRouter>
+              <Cabecalho />
 
-            <main className="conteudo">
-              <Routes>
-                {/* --- Públicas (visitante) --- */}
-                <Route path="/" element={<Catalogo />} />
-                <Route path="/produtos/:id" element={<Produto />} />
-                <Route path="/produtores" element={<Produtores />} />
-                <Route path="/produtores/:id" element={<PaginaProdutor />} />
-                <Route path="/leiloes" element={<Leiloes />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/registo" element={<Registo />} />
-                <Route path="/carrinho" element={<Carrinho />} />
+              <main className="conteudo">
+                <Routes>
+                  {/* --- Públicas (visitante) --- */}
+                  <Route path="/" element={<Catalogo />} />
+                  <Route path="/produtos/:id" element={<Produto />} />
+                  <Route path="/produtores" element={<Produtores />} />
+                  <Route path="/produtores/:id" element={<PaginaProdutor />} />
+                  <Route path="/leiloes" element={<Leiloes />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/registo" element={<Registo />} />
+                  <Route path="/carrinho" element={<Carrinho />} />
 
-                {/* --- Comprador --- */}
-                <Route
-                  path="/leiloes/:id"
-                  element={<RotaProtegida papeis={['comprador', 'produtor', 'admin']}><SalaLeilao /></RotaProtegida>}
-                />
-                <Route
-                  path="/encomendas"
-                  element={<RotaProtegida papeis={['comprador']}><MinhasEncomendas /></RotaProtegida>}
-                />
+                  {/* --- Comprador --- */}
+                  <Route
+                    path="/leiloes/:id"
+                    element={<RotaProtegida papeis={['comprador', 'produtor', 'admin']}><SalaLeilao /></RotaProtegida>}
+                  />
+                  <Route
+                    path="/encomendas"
+                    element={<RotaProtegida papeis={['comprador']}><MinhasEncomendas /></RotaProtegida>}
+                  />
+                  <Route
+                    path="/perfil"
+                    element={<RotaProtegida papeis={['comprador']}><PerfilComprador /></RotaProtegida>}
+                  />
 
-                {/* --- Produtor --- */}
-                <Route path="/produtor" element={<RotaProtegida papeis={['produtor']}><PainelProdutor /></RotaProtegida>} />
-                <Route path="/produtor/produtos" element={<RotaProtegida papeis={['produtor']}><MeusProdutos /></RotaProtegida>} />
-                <Route path="/produtor/encomendas" element={<RotaProtegida papeis={['produtor']}><EncomendasProdutor /></RotaProtegida>} />
-                <Route path="/produtor/leiloes" element={<RotaProtegida papeis={['produtor']}><MeusLeiloes /></RotaProtegida>} />
-                <Route path="/produtor/perfil" element={<RotaProtegida papeis={['produtor']}><PerfilProdutor /></RotaProtegida>} />
+                  {/* --- Produtor --- */}
+                  <Route path="/produtor" element={<RotaProtegida papeis={['produtor']}><PainelProdutor /></RotaProtegida>} />
+                  <Route path="/produtor/produtos" element={<RotaProtegida papeis={['produtor']}><MeusProdutos /></RotaProtegida>} />
+                  <Route path="/produtor/encomendas" element={<RotaProtegida papeis={['produtor']}><EncomendasProdutor /></RotaProtegida>} />
+                  <Route path="/produtor/leiloes" element={<RotaProtegida papeis={['produtor']}><MeusLeiloes /></RotaProtegida>} />
+                  <Route path="/produtor/perfil" element={<RotaProtegida papeis={['produtor']}><PerfilProdutor /></RotaProtegida>} />
 
-                {/* --- Administrador --- */}
-                <Route path="/admin" element={<RotaProtegida papeis={['admin']}><PainelAdmin /></RotaProtegida>} />
+                  {/* --- Administrador --- */}
+                  <Route path="/admin" element={<RotaProtegida papeis={['admin']}><PainelAdmin /></RotaProtegida>} />
 
-                <Route path="*" element={<NaoEncontrado />} />
-              </Routes>
-            </main>
+                  <Route path="*" element={<NaoEncontrado />} />
+                </Routes>
+              </main>
 
-            <Notificacoes />
-            <Rodape />
-          </BrowserRouter>
-        </CarrinhoProvider>
-      </SocketProvider>
+              <Notificacoes />
+              <Rodape />
+            </BrowserRouter>
+          </CarrinhoProvider>
+        </SocketProvider>
+      </AvisosProvider>
     </AuthProvider>
   );
 }

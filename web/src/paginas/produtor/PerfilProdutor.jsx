@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../servicos/api';
 import { useAuth } from '../../contexto/AuthContext';
+import { useAvisos } from '../../contexto/AvisosContext';
 import { coordenadasDe } from '../../dados/concelhos';
 import SelectLocalidade from '../../componentes/SelectLocalidade';
 import NavProdutor from './NavProdutor';
@@ -20,8 +21,7 @@ export default function PerfilProdutor() {
     telefone: utilizador.telefone || '',
     descricao: utilizador.descricao || '',
   });
-  const [erro, setErro] = useState('');
-  const [aviso, setAviso] = useState('');
+  const { sucesso, erro } = useAvisos();
   const [aGuardar, setAGuardar] = useState(false);
 
   const mudar = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
@@ -31,14 +31,14 @@ export default function PerfilProdutor() {
 
   async function submeter(evento) {
     evento.preventDefault();
-    setErro(''); setAviso(''); setAGuardar(true);
+    setAGuardar(true);
 
     try {
       const atualizado = await api.put('/auth/me', { ...form, ...(coordenadas ?? {}) });
       atualizar(atualizado);
-      setAviso('Página pública atualizada.');
+      sucesso('Página pública atualizada.');
     } catch (e) {
-      setErro(e.message);
+      erro(e.message);
     } finally {
       setAGuardar(false);
     }
@@ -88,9 +88,6 @@ export default function PerfilProdutor() {
                   onChange={mudar('descricao')}
                 />
               </div>
-
-              {erro && <div className="col-12"><div className="alert alert-danger py-2 mb-0">{erro}</div></div>}
-              {aviso && <div className="col-12"><div className="alert alert-success py-2 mb-0">{aviso}</div></div>}
 
               <div className="col-12 d-flex gap-2 align-items-center">
                 <button className="btn btn-verde" disabled={aGuardar}>

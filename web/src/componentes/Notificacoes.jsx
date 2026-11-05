@@ -1,16 +1,16 @@
-import { useSocket } from '../contexto/SocketContext';
+import { useAvisos } from '../contexto/AvisosContext';
 
-/** Avisos em tempo real que chegam pelo WebSocket (canto inferior direito). */
+/** Avisos temporários no canto inferior do ecrã. */
 export default function Notificacoes() {
-  const { notificacoes, fechar } = useSocket();
-  if (notificacoes.length === 0) return null;
+  const { avisos, fechar } = useAvisos();
+  if (avisos.length === 0) return null;
 
   return (
-    <div className="notificacoes">
-      {notificacoes.map((n) => (
-        <div key={n.id} className="notificacao d-flex justify-content-between align-items-start gap-2">
-          <span>{n.texto}</span>
-          <button className="btn-close btn-sm" aria-label="Fechar" onClick={() => fechar(n.id)} />
+    <div className="notificacoes" role="status" aria-live="polite">
+      {avisos.map((aviso) => (
+        <div key={aviso.id} className={`notificacao aviso-${aviso.tipo} d-flex justify-content-between align-items-start gap-2`}>
+          <span>{aviso.texto}</span>
+          <button className="btn-close btn-sm" aria-label="Fechar" onClick={() => fechar(aviso.id)} />
         </div>
       ))}
     </div>

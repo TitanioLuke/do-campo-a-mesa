@@ -1,10 +1,24 @@
 @use 'variaveis' as v;
 @use 'mixins' as m;
 
+// A página ocupa sempre, no mínimo, a altura do ecrã, e o conteúdo cresce
+// para encher o espaço que sobra. É assim que o rodapé fica colado ao fundo
+// mesmo nas páginas curtas, em vez de deixar uma faixa branca por baixo.
+html,
+body {
+  height: 100%;
+}
+
 body {
   background: v.$fundo;
   color: v.$cinza-texto;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+#root {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 h1, h2, h3, h4 {
@@ -15,10 +29,11 @@ h1, h2, h3, h4 {
 a { text-decoration: none; }
 
 .conteudo {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 1rem;
-  min-height: 70vh;
+  flex: 1 0 auto; // cresce para empurrar o rodapé até ao fundo
 
   @include m.a-partir-de(md) { padding: 1.5rem; }
   @include m.a-partir-de(lg) { padding: 2rem 1.5rem; }
@@ -56,10 +71,10 @@ a { text-decoration: none; }
 
 // ---------- Rodapé ----------
 .rodape {
+  flex-shrink: 0;
   background: #23301f;
   color: rgba(255, 255, 255, 0.75);
   padding: 2rem 1rem;
-  margin-top: 3rem;
   font-size: 0.9rem;
   text-align: center;
 }
