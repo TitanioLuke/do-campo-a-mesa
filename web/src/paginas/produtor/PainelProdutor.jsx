@@ -49,7 +49,7 @@ export default function PainelProdutor() {
       <div className="row g-4">
         <div className="col-12 col-lg-6">
           <div className="painel h-100">
-            <h2 className="h6">⚠️ Alertas de stock baixo</h2>
+            <h2 className="h6">Alertas de stock baixo</h2>
             {dados.stockBaixo.length === 0 ? (
               <p className="text-black-50 small mb-0">Nenhum produto com menos de 5 unidades.</p>
             ) : (
@@ -70,7 +70,7 @@ export default function PainelProdutor() {
 
         <div className="col-12 col-lg-6">
           <div className="painel h-100">
-            <h2 className="h6">🔴 Leilões a decorrer na plataforma</h2>
+            <h2 className="h6"><span className="ponto ponto-direto" />Leilões a decorrer na plataforma</h2>
             {leiloes.length === 0 ? (
               <p className="text-black-50 small mb-0">Não há leilões ativos.</p>
             ) : (

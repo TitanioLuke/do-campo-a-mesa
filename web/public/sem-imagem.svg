@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="600" height="420" viewBox="0 0 600 420">
   <rect width="600" height="420" fill="#eef4ef"/>
-  <text x="300" y="215" font-size="110" text-anchor="middle">🧺</text>
-  <text x="300" y="300" font-size="26" font-family="Georgia, serif" fill="#2f5d3a" text-anchor="middle">sem imagem</text>
+  <line x1="250" y1="190" x2="350" y2="190" stroke="#2f5d3a" stroke-opacity="0.35" stroke-width="2"/>
+  <text x="300" y="245" font-size="30" font-family="Georgia, serif" fill="#2f5d3a" text-anchor="middle">sem imagem</text>
 </svg>

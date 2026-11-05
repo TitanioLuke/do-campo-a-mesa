@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
   const { q, localidade } = req.query;
   const filtro = { papel: 'produtor', aprovado: 'aprovado' };
   if (q) filtro.nome = { $regex: q, $options: 'i' };
-  if (localidade) filtro.localidade = { $regex: localidade, $options: 'i' };
+  if (localidade) filtro.localidade = localidade; // exata: vem da lista de concelhos
 
   const produtores = await User.find(filtro).sort({ nome: 1 });
   res.json(produtores);

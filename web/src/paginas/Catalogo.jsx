@@ -67,7 +67,7 @@ export default function Catalogo() {
       {leiloes.length > 0 && (
         <section className="mb-4">
           <div className="d-flex justify-content-between align-items-center mb-2">
-            <h2 className="h5 mb-0">🔴 Leilões em direto</h2>
+            <h2 className="h5 mb-0"><span className="ponto ponto-direto" />Leilões em direto</h2>
             <Link to="/leiloes" className="small">Ver todos</Link>
           </div>
           <div className="grelha-leiloes">
@@ -89,8 +89,26 @@ export default function Catalogo() {
       {aCarregar && <p className="text-center py-4 text-black-50">A carregar produtos…</p>}
 
       {!aCarregar && produtos.length === 0 && (
-        <div className="alert alert-light border text-center">
-          Nenhum produto corresponde aos filtros escolhidos.
+        <div className="painel text-center py-5">
+          {filtro.localidade ? (
+            <>
+              <p className="h5 mb-2">Ainda não há produtores em {filtro.localidade}.</p>
+              <p className="text-black-50 mb-3">
+                A plataforma está a crescer concelho a concelho. Experimente outra
+                localidade ou veja o catálogo completo.
+              </p>
+              <button className="btn btn-verde" onClick={() => setFiltro({ ...filtro, localidade: '' })}>
+                Ver todas as localidades
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="h5 mb-2">Nenhum produto corresponde aos filtros escolhidos.</p>
+              <button className="btn btn-outline-secondary" onClick={() => setFiltro(FILTRO_INICIAL)}>
+                Limpar filtros
+              </button>
+            </>
+          )}
         </div>
       )}
 

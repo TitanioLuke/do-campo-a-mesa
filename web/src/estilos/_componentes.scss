@@ -63,6 +63,25 @@
   margin-left: 0.35rem;
 }
 
+// Ponto de estado, usado onde antes havia emojis (ligado, em direto, parado)
+.ponto {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: #b9b9b2;
+  vertical-align: baseline;
+  margin-right: 0.4rem;
+
+  &.ponto-ligado { background: #3fae5a; }
+  &.ponto-direto { background: v.$terracota; animation: pulsar 1.6s ease-in-out infinite; }
+}
+
+@keyframes pulsar {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
 // ---------- Etiquetas ----------
 .etiqueta {
   display: inline-block;

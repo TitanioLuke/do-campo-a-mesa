@@ -38,7 +38,9 @@ router.get('/', async (req, res) => {
   } else {
     // Só aparecem no catálogo produtos de produtores aprovados pelo administrador
     const filtroProdutor = { papel: 'produtor', aprovado: 'aprovado' };
-    if (localidade) filtroProdutor.localidade = { $regex: localidade, $options: 'i' };
+    // Correspondência exata: os nomes vêm da mesma lista de concelhos no cliente.
+    // Com $regex, "Porto" apanharia "Porto de Mós" e "Braga" apanharia "Bragança".
+    if (localidade) filtroProdutor.localidade = localidade;
     const aprovados = await User.find(filtroProdutor).select('_id');
     filtro.produtor = { $in: aprovados.map((p) => p._id) };
   }

@@ -146,7 +146,9 @@ ainda não foi validado: é o que permite demonstrar a aprovação no painel do 
 ### Visitante (sem sessão)
 
 - Explorar o catálogo com pesquisa por nome/descrição e filtros por categoria, época,
-  **produtor**, localidade, preço máximo e modo biológico; ordenação por preço ou data.
+  **produtor**, **localidade**, preço máximo e modo biológico; ordenação por preço ou data.
+  A localidade é escolhida numa lista dos **308 concelhos de Portugal**, e quando não há
+  ninguém a vender nesse concelho a página diz-o e oferece voltar ao catálogo completo.
 - Ver a página pública de cada produtor, com apresentação, mapa e avaliações recebidas.
 - Ver a lista de leilões (ativos e terminados) e o destaque dos leilões em direto na página inicial.
 - Juntar produtos ao carrinho (fica guardado no `localStorage`) e registar-se como comprador
@@ -174,8 +176,9 @@ ainda não foi validado: é o que permite demonstrar a aprovação no painel do 
 - Encomendas recebidas, com filtro por estado e botão para avançar o estado
   (o comprador é notificado na hora).
 - Criar leilões (lote, preço base, incremento e duração) e acompanhar os que estão a decorrer.
-- Editar a sua **página pública** (nome, localidade, telefone, apresentação e coordenadas
-  do mapa), com pré-visualização ao lado do formulário.
+- Editar a sua **página pública** (nome, concelho, telefone e apresentação), com
+  pré-visualização ao lado do formulário. O mapa é colocado automaticamente no concelho
+  escolhido — ninguém tem de copiar latitudes e longitudes à mão.
 
 ### Administrador
 
@@ -239,6 +242,7 @@ TrabalhoPratico/
         ├── componentes/          # Reutilizáveis
         │   ├── Cabecalho.jsx  Rodape.jsx  Notificacoes.jsx
         │   ├── CartaoProduto.jsx  CartaoLeilao.jsx  FiltrosCatalogo.jsx
+        │   ├── SelectLocalidade.jsx  # lista de concelhos, partilhada por 3 ecrãs
         │   └── Contador.jsx  Estrelas.jsx  EtiquetaEstado.jsx  RotaProtegida.jsx
         ├── contexto/             # Estado global
         │   ├── AuthContext.jsx   # Sessão e papel
@@ -251,6 +255,7 @@ TrabalhoPratico/
         │   ├── Login.jsx  Registo.jsx  NaoEncontrado.jsx
         │   ├── produtor/         # Painel, produtos, encomendas, leilões, página pública
         │   └── admin/PainelAdmin.jsx
+        ├── dados/concelhos.js    # Os 308 concelhos, com distrito e coordenadas
         ├── servicos/api.js       # Camada única de acesso à API
         ├── estilos/              # SASS
         │   ├── _variaveis.scss  _mixins.scss
@@ -365,6 +370,27 @@ useEffect(() => {
 Todos os pedidos passam por `web/src/servicos/api.js`, que acrescenta o cabeçalho
 `Authorization: Bearer <token>`, trata o `204 No Content` e transforma os erros da API em
 exceções com a mensagem em português.
+
+### 9.1. A lista de concelhos
+
+A localidade deixou de ser um campo de texto livre. `web/src/dados/concelhos.js` tem os
+**308 concelhos de Portugal**, com o distrito e as coordenadas do centro, extraídos da
+Carta Administrativa Oficial de Portugal. O mesmo ficheiro serve três ecrãs: o registo de
+produtor, a página pública do produtor e os filtros do catálogo e da lista de produtores.
+
+Isto resolve três problemas de uma vez:
+
+- **A pesquisa bate sempre certo.** Como o nome gravado e o nome filtrado saem da mesma
+  lista, não há "ponte de lima" a falhar contra "Ponte de Lima".
+- **Ninguém escreve coordenadas.** O mapa da página do produtor usa as coordenadas do
+  concelho escolhido, em vez de obrigar o produtor a ir buscá-las ao Google Maps.
+- **O filtro usa correspondência exata**, e não `$regex`. Com expressão regular, filtrar
+  por "Porto" apanharia também "Porto de Mós" e "Porto Santo", e "Braga" apanharia
+  "Bragança". (O `$regex` continua a ser usado na pesquisa por nome e descrição, onde a
+  correspondência parcial é precisamente o que se quer.)
+
+Há ainda um pormenor que vale a pena saber: **dois concelhos chamam-se "Lagoa"**, um em
+Faro e outro nos Açores. Na lista aparecem os dois, cada um no seu distrito.
 
 ---
 

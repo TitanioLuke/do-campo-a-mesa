@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../servicos/api';
 import { useAuth } from '../../contexto/AuthContext';
+import { coordenadasDe } from '../../dados/concelhos';
+import SelectLocalidade from '../../componentes/SelectLocalidade';
 import NavProdutor from './NavProdutor';
 
 /**
@@ -17,8 +19,6 @@ export default function PerfilProdutor() {
     localidade: utilizador.localidade || '',
     telefone: utilizador.telefone || '',
     descricao: utilizador.descricao || '',
-    latitude: utilizador.latitude ?? '',
-    longitude: utilizador.longitude ?? '',
   });
   const [erro, setErro] = useState('');
   const [aviso, setAviso] = useState('');
@@ -26,17 +26,15 @@ export default function PerfilProdutor() {
 
   const mudar = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
 
+  // O mapa usa as coordenadas do concelho escolhido, não um valor escrito à mão
+  const coordenadas = coordenadasDe(form.localidade);
+
   async function submeter(evento) {
     evento.preventDefault();
     setErro(''); setAviso(''); setAGuardar(true);
 
     try {
-      const atualizado = await api.put('/auth/me', {
-        ...form,
-        // os campos numéricos vão como número, ou vazios se não forem preenchidos
-        latitude: form.latitude === '' ? undefined : Number(form.latitude),
-        longitude: form.longitude === '' ? undefined : Number(form.longitude),
-      });
+      const atualizado = await api.put('/auth/me', { ...form, ...(coordenadas ?? {}) });
       atualizar(atualizado);
       setAviso('Página pública atualizada.');
     } catch (e) {
@@ -45,8 +43,6 @@ export default function PerfilProdutor() {
       setAGuardar(false);
     }
   }
-
-  const temMapa = form.latitude !== '' && form.longitude !== '';
 
   return (
     <>
@@ -62,22 +58,23 @@ export default function PerfilProdutor() {
                 <label className="form-label small mb-1" htmlFor="nome">Nome do produtor / quinta</label>
                 <input id="nome" className="form-control" required value={form.nome} onChange={mudar('nome')} />
               </div>
-              <div className="col-12 col-md-6">
-                <label className="form-label small mb-1" htmlFor="localidade">Localidade</label>
-                <input id="localidade" className="form-control" placeholder="Ex.: Ponte de Lima" value={form.localidade} onChange={mudar('localidade')} />
-              </div>
 
               <div className="col-12 col-md-6">
                 <label className="form-label small mb-1" htmlFor="telefone">Telefone</label>
                 <input id="telefone" className="form-control" value={form.telefone} onChange={mudar('telefone')} />
               </div>
-              <div className="col-6 col-md-3">
-                <label className="form-label small mb-1" htmlFor="latitude">Latitude</label>
-                <input id="latitude" type="number" step="any" className="form-control" placeholder="41.7681" value={form.latitude} onChange={mudar('latitude')} />
-              </div>
-              <div className="col-6 col-md-3">
-                <label className="form-label small mb-1" htmlFor="longitude">Longitude</label>
-                <input id="longitude" type="number" step="any" className="form-control" placeholder="-8.5836" value={form.longitude} onChange={mudar('longitude')} />
+
+              <div className="col-12">
+                <label className="form-label small mb-1" htmlFor="localidade">Concelho</label>
+                <SelectLocalidade
+                  id="localidade"
+                  valor={form.localidade}
+                  aoMudar={(valor) => setForm({ ...form, localidade: valor })}
+                  obrigatorio
+                />
+                <small className="text-black-50">
+                  O mapa da sua página é colocado automaticamente no concelho que escolher.
+                </small>
               </div>
 
               <div className="col-12">
@@ -113,22 +110,21 @@ export default function PerfilProdutor() {
 
             <p className="h5 mb-1">{form.nome || 'Nome do produtor'}</p>
             <p className="text-black-50 small mb-2">
-              📍 {form.localidade || 'Localidade por indicar'}
-              {form.telefone && ` · ☎ ${form.telefone}`}
+              {form.localidade || 'Concelho por escolher'}
+              {form.telefone && ` · Tel. ${form.telefone}`}
             </p>
             <p className="small">{form.descricao || 'Ainda não escreveu uma apresentação.'}</p>
 
-            {temMapa ? (
+            {coordenadas ? (
               <iframe
                 className="mapa"
                 title="Pré-visualização do mapa"
-                src={`https://www.openstreetmap.org/export/embed.html?bbox=${form.longitude - 0.02}%2C${form.latitude - 0.015}%2C${Number(form.longitude) + 0.02}%2C${Number(form.latitude) + 0.015}&layer=mapnik&marker=${form.latitude}%2C${form.longitude}`}
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${coordenadas.longitude - 0.06}%2C${coordenadas.latitude - 0.04}%2C${coordenadas.longitude + 0.06}%2C${coordenadas.latitude + 0.04}&layer=mapnik&marker=${coordenadas.latitude}%2C${coordenadas.longitude}`}
                 loading="lazy"
               />
             ) : (
               <div className="alert alert-light border small mb-0">
-                Preencha a latitude e a longitude para aparecer um mapa na sua página.
-                Pode copiá-las do Google Maps ou do OpenStreetMap.
+                Escolha o concelho para aparecer um mapa na sua página.
               </div>
             )}
           </div>

@@ -28,7 +28,7 @@ export default function Cabecalho() {
     <header className="cabecalho">
       <nav className="navbar navbar-expand-md container-fluid" style={{ maxWidth: 1200 }}>
         <Link className="marca navbar-brand" to="/" onClick={fechar}>
-          🧺 Do Campo à Mesa
+          Do Campo à Mesa
         </Link>
 
         <button
@@ -61,7 +61,7 @@ export default function Cabecalho() {
             {papel !== 'produtor' && papel !== 'admin' && (
               <li className="nav-item">
                 <NavLink to="/carrinho" className={classe} onClick={fechar}>
-                  🛒 Carrinho
+                  Carrinho
                   {numArtigos > 0 && <span className="contador-carrinho">{numArtigos}</span>}
                 </NavLink>
               </li>
@@ -71,7 +71,8 @@ export default function Cabecalho() {
               <>
                 <li className="nav-item">
                   <span className="nav-link" title={ligado ? 'Ligado em tempo real' : 'Sem ligação em tempo real'}>
-                    {ligado ? '🟢' : '⚪'} {utilizador.nome}
+                    <span className={`ponto${ligado ? ' ponto-ligado' : ''}`} />
+                    {utilizador.nome}
                   </span>
                 </li>
                 <li className="nav-item">

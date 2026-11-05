@@ -28,14 +28,14 @@ export default function PaginaProdutor() {
 
   // Mapa embebido do OpenStreetMap (não precisa de chave nem de biblioteca extra)
   const urlMapa = temMapa
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${produtor.longitude - 0.02}%2C${produtor.latitude - 0.015}%2C${produtor.longitude + 0.02}%2C${produtor.latitude + 0.015}&layer=mapnik&marker=${produtor.latitude}%2C${produtor.longitude}`
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${produtor.longitude - 0.06}%2C${produtor.latitude - 0.04}%2C${produtor.longitude + 0.06}%2C${produtor.latitude + 0.04}&layer=mapnik&marker=${produtor.latitude}%2C${produtor.longitude}`
     : null;
 
   return (
     <>
       <section className="destaque">
         <h1>{produtor.nome}</h1>
-        <p className="mb-1">📍 {produtor.localidade} {produtor.telefone && `· ☎ ${produtor.telefone}`}</p>
+        <p className="mb-1">{produtor.localidade}{produtor.telefone && ` · Tel. ${produtor.telefone}`}</p>
         {avaliacoes.length > 0 && (
           <p className="mb-0">
             <Estrelas nota={Number(notaMedia)} total={avaliacoes.length} /> <span className="ms-1">{notaMedia} / 5</span>

@@ -34,7 +34,7 @@ export default function Contador({ terminaEm, aoTerminar }) {
   // Leilões longos mostram "3d 04:12:08"; os curtos só "12:08" ou "04:12:08"
   return (
     <span className="relogio">
-      ⏱ {dias > 0 && `${dias}d `}
+      {dias > 0 && `${dias}d `}
       {(dias > 0 || horas > 0) && `${dois(horas)}:`}
       {dois(minutos)}:{dois(segundos)}
     </span>

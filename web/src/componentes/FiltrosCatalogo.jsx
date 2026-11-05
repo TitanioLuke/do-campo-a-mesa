@@ -1,3 +1,5 @@
+import SelectLocalidade from './SelectLocalidade';
+
 const CATEGORIAS = ['Todas', 'Hortícolas', 'Fruta', 'Mel', 'Vinho', 'Queijo', 'Outros'];
 const EPOCAS = ['Todas', 'Primavera', 'Verão', 'Outono', 'Inverno', 'Todo o ano'];
 
@@ -50,9 +52,14 @@ export default function FiltrosCatalogo({ filtro, produtores = [], aoMudar, aoLi
           </select>
         </div>
 
-        <div className="col-6 col-md-3 col-lg-2">
+        <div className="col-12 col-md-6 col-lg-3">
           <label className="form-label small mb-1" htmlFor="localidade">Localidade</label>
-          <input id="localidade" className="form-control" placeholder="Ex.: Ponte de Lima" value={filtro.localidade} onChange={mudar('localidade')} />
+          <SelectLocalidade
+            id="localidade"
+            valor={filtro.localidade}
+            aoMudar={(valor) => aoMudar({ ...filtro, localidade: valor })}
+            textoVazio="Todas as localidades"
+          />
         </div>
 
         <div className="col-6 col-md-3 col-lg-2">
@@ -67,7 +74,7 @@ export default function FiltrosCatalogo({ filtro, produtores = [], aoMudar, aoLi
           </div>
         </div>
 
-        <div className="col-12 col-md-6 col-lg-3 d-flex align-items-end">
+        <div className="col-12 col-md-6 col-lg-2 d-flex align-items-end">
           <select className="form-select" value={filtro.ordenar} onChange={mudar('ordenar')} aria-label="Ordenar">
             <option value="recentes">Mais recentes</option>
             <option value="precoAsc">Preço: mais baratos</option>

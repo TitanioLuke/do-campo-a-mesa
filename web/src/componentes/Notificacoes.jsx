@@ -9,7 +9,7 @@ export default function Notificacoes() {
     <div className="notificacoes">
       {notificacoes.map((n) => (
         <div key={n.id} className="notificacao d-flex justify-content-between align-items-start gap-2">
-          <span>🔔 {n.texto}</span>
+          <span>{n.texto}</span>
           <button className="btn-close btn-sm" aria-label="Fechar" onClick={() => fechar(n.id)} />
         </div>
       ))}

@@ -107,11 +107,19 @@ export default function PainelAdmin() {
               <tbody>
                 <tr>
                   <td>API REST + MongoDB</td>
-                  <td className="text-end">{apiViva === null ? '…' : apiViva ? '🟢 a responder' : '🔴 sem resposta'}</td>
+                  <td className="text-end">
+                    {apiViva === null ? '…' : (
+                      <><span className={`ponto${apiViva ? ' ponto-ligado' : ' ponto-direto'}`} />
+                      {apiViva ? 'a responder' : 'sem resposta'}</>
+                    )}
+                  </td>
                 </tr>
                 <tr>
                   <td>Servidor de WebSockets (Socket.io)</td>
-                  <td className="text-end">{ligado ? '🟢 ligado' : '⚪ desligado'}</td>
+                  <td className="text-end">
+                    <span className={`ponto${ligado ? ' ponto-ligado' : ''}`} />
+                    {ligado ? 'ligado' : 'desligado'}
+                  </td>
                 </tr>
                 <tr>
                   <td>Documentação OpenAPI (Swagger UI)</td>
@@ -137,7 +145,7 @@ export default function PainelAdmin() {
                 <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
                   <div>
                     <strong>{p.nome}</strong>
-                    <div className="small text-black-50">{p.email} · 📍 {p.localidade} · ☎ {p.telefone}</div>
+                    <div className="small text-black-50">{p.email} · {p.localidade} · Tel. {p.telefone}</div>
                     <p className="small mb-0 mt-1">{p.descricao}</p>
                   </div>
                   <div className="d-flex gap-2">

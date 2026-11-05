@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexto/AuthContext';
+import { coordenadasDe } from '../dados/concelhos';
+import SelectLocalidade from '../componentes/SelectLocalidade';
 
 export default function Registo() {
   const [dados, setDados] = useState({
     nome: '', email: '', password: '', papel: 'comprador',
-    localidade: '', descricao: '', telefone: '', latitude: '', longitude: '',
+    localidade: '', descricao: '', telefone: '',
   });
   const [erro, setErro] = useState('');
   const [aEnviar, setAEnviar] = useState(false);
@@ -23,10 +25,9 @@ export default function Registo() {
       const corpo = { ...dados };
       if (corpo.papel === 'comprador') {
         delete corpo.localidade; delete corpo.descricao; delete corpo.telefone;
-        delete corpo.latitude; delete corpo.longitude;
       } else {
-        corpo.latitude = corpo.latitude ? Number(corpo.latitude) : undefined;
-        corpo.longitude = corpo.longitude ? Number(corpo.longitude) : undefined;
+        // As coordenadas do mapa saem do concelho escolhido; ninguém as escreve
+        Object.assign(corpo, coordenadasDe(corpo.localidade) ?? {});
       }
       const utilizador = await registar(corpo);
       navegar(utilizador.papel === 'produtor' ? '/produtor' : '/');
@@ -77,20 +78,18 @@ export default function Registo() {
               {dados.papel === 'produtor' && (
                 <>
                   <div className="col-12 col-md-6">
-                    <label className="form-label" htmlFor="localidade">Localidade</label>
-                    <input id="localidade" className="form-control" value={dados.localidade} onChange={mudar('localidade')} />
+                    <label className="form-label" htmlFor="localidade">Concelho</label>
+                    <SelectLocalidade
+                      id="localidade"
+                      valor={dados.localidade}
+                      aoMudar={(valor) => setDados({ ...dados, localidade: valor })}
+                      obrigatorio
+                    />
+                    <small className="text-black-50">É o que os compradores veem e por onde o encontram nos filtros.</small>
                   </div>
                   <div className="col-12 col-md-6">
                     <label className="form-label" htmlFor="telefone">Telefone</label>
                     <input id="telefone" className="form-control" value={dados.telefone} onChange={mudar('telefone')} />
-                  </div>
-                  <div className="col-6 col-md-3">
-                    <label className="form-label" htmlFor="latitude">Latitude</label>
-                    <input id="latitude" type="number" step="any" className="form-control" placeholder="41.7681" value={dados.latitude} onChange={mudar('latitude')} />
-                  </div>
-                  <div className="col-6 col-md-3">
-                    <label className="form-label" htmlFor="longitude">Longitude</label>
-                    <input id="longitude" type="number" step="any" className="form-control" placeholder="-8.5836" value={dados.longitude} onChange={mudar('longitude')} />
                   </div>
                   <div className="col-12">
                     <label className="form-label" htmlFor="descricao">Apresentação</label>

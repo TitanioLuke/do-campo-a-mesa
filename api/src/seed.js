@@ -58,20 +58,40 @@ const CORES = {
  *
  * Guardar o próprio desenho no campo `imagem`, em vez de um ficheiro, faz com
  * que os dados de demonstração funcionem em qualquer sítio — local ou na Cloud
- * — sem depender da internet nem de um serviço de storage. São ~700 bytes por
- * produto. As fotografias que os produtores carregam seguem outro caminho
- * (ver `middleware/upload.js`).
+ * — sem depender da internet nem de um serviço de storage. As fotografias que
+ * os produtores carregam seguem outro caminho (ver `middleware/upload.js`).
  */
-function criarImagem(nome, categoria, emoji) {
+function criarImagem(nome, categoria) {
   const [c1, c2] = CORES[categoria] || CORES.Outros;
+
+  // Parte o nome em linhas de ~16 caracteres, para caber na largura da imagem
+  const linhas = [];
+  let linha = '';
+  for (const palavra of nome.split(' ')) {
+    if (`${linha} ${palavra}`.trim().length > 16 && linha) {
+      linhas.push(linha.trim());
+      linha = palavra;
+    } else {
+      linha = `${linha} ${palavra}`;
+    }
+  }
+  if (linha.trim()) linhas.push(linha.trim());
+
+  const primeiraLinha = 250 - (linhas.length - 1) * 26;
+  const texto = linhas
+    .map((l, i) => `<text x="300" y="${primeiraLinha + i * 52}" font-size="44" font-family="Georgia, serif" fill="#ffffff" text-anchor="middle">${l}</text>`)
+    .join('\n  ');
+
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="420" viewBox="0 0 600 420">
   <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
     <stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/>
   </linearGradient></defs>
   <rect width="600" height="420" fill="url(#g)"/>
-  <text x="300" y="215" font-size="130" text-anchor="middle">${emoji}</text>
-  <text x="300" y="320" font-size="30" font-family="Georgia, serif" fill="#ffffff" text-anchor="middle">${nome}</text>
+  <text x="300" y="132" font-size="21" letter-spacing="5" font-family="Helvetica, Arial, sans-serif" fill="#ffffff" fill-opacity="0.7" text-anchor="middle">${categoria.toUpperCase()}</text>
+  <line x1="250" y1="168" x2="350" y2="168" stroke="#ffffff" stroke-opacity="0.45" stroke-width="2"/>
+  ${texto}
 </svg>`;
+
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
 }
 
@@ -100,41 +120,41 @@ async function seed() {
       localidade: 'Ponte de Lima', telefone: '258 900 100', aprovado: 'aprovado',
       descricao: 'Produção familiar de hortícolas e fruta em modo biológico desde 1987. '
         + 'Trabalhamos 4 hectares de terra em Arcozelo e entregamos duas vezes por semana em Ponte de Lima e Viana.',
-      latitude: 41.7681, longitude: -8.5836, data: haDias(230),
+      latitude: 41.7574, longitude: -8.5875, data: haDias(230),
     }),
     conta({
       nome: 'Horta da Serra', email: 'horta@dcm.pt', papel: 'produtor',
       localidade: 'Viana do Castelo', telefone: '258 900 200', aprovado: 'aprovado',
       descricao: 'Legumes da época colhidos no próprio dia da entrega. '
         + 'Fornecemos várias cantinas escolares e restaurantes do concelho.',
-      latitude: 41.6918, longitude: -8.8344, data: haDias(205),
+      latitude: 41.717, longitude: -8.7594, data: haDias(205),
     }),
     conta({
       nome: 'Apiário do Minho', email: 'apiario@dcm.pt', papel: 'produtor',
       localidade: 'Arcos de Valdevez', telefone: '258 900 300', aprovado: 'aprovado',
       descricao: 'Mel de urze, rosmaninho e castanheiro colhido na Serra da Peneda. '
         + '120 colmeias em apiários acima dos 700 metros.',
-      latitude: 41.8464, longitude: -8.4197, data: haDias(180),
+      latitude: 41.9029, longitude: -8.3645, data: haDias(180),
     }),
     conta({
       nome: 'Queijaria do Lima', email: 'queijaria@dcm.pt', papel: 'produtor',
       localidade: 'Ponte da Barca', telefone: '258 900 400', aprovado: 'aprovado',
       descricao: 'Queijos de cabra e de ovelha de fabrico artesanal, com cura em cave de pedra. '
         + 'Três gerações a fazer o mesmo queijo.',
-      latitude: 41.8057, longitude: -8.4213, data: haDias(150),
+      latitude: 41.8067, longitude: -8.3098, data: haDias(150),
     }),
     conta({
       nome: 'Adega do Alvarinho', email: 'adega@dcm.pt', papel: 'produtor',
       localidade: 'Monção', telefone: '251 900 500', aprovado: 'aprovado',
       descricao: 'Pequena adega familiar na sub-região de Monção e Melgaço. '
         + 'Vinhos verdes de Alvarinho e Loureiro, vindima manual.',
-      latitude: 42.0776, longitude: -8.4818, data: haDias(120),
+      latitude: 42.0272, longitude: -8.4264, data: haDias(120),
     }),
     conta({
       nome: 'Pomar das Caldas', email: 'pomar@dcm.pt', papel: 'produtor',
-      localidade: 'Caldas de Vizela', telefone: '253 900 600', aprovado: 'pendente',
+      localidade: 'Vizela', telefone: '253 900 600', aprovado: 'pendente',
       descricao: 'Pomar de cereja e ameixa à espera de validação para começar a vender.',
-      latitude: 41.3800, longitude: -8.3150, data: haDias(3),
+      latitude: 41.3733, longitude: -8.2956, data: haDias(3),
     }),
   ]);
 
@@ -148,52 +168,52 @@ async function seed() {
 
   // ========================= PRODUTOS =========================
 
-  const prod = (produtor, nome, categoria, emoji, preco, unidade, stock, bio, epoca, dias, descricao) => ({
+  const prod = (produtor, nome, categoria, preco, unidade, stock, bio, epoca, dias, descricao) => ({
     produtor: produtor._id, nome, categoria, preco, unidade, stock,
-    biologico: bio, epoca, descricao, imagem: criarImagem(nome, categoria, emoji),
+    biologico: bio, epoca, descricao, imagem: criarImagem(nome, categoria),
     data: haDias(dias),
   });
 
   const p = await inserir(Product, [
     // --- Quinta do Vale ---
-    prod(quinta, 'Kiwi Hayward', 'Fruta', '🥝', 2.40, 'kg', 40, true, 'Outono', 120, 'Kiwi de polpa firme, colhido na quinta e guardado em câmara.'),
-    prod(quinta, 'Maçã Bravo de Esmolfe', 'Fruta', '🍎', 3.10, 'kg', 25, true, 'Outono', 118, 'Variedade DOP, muito aromática e de calibre pequeno.'),
-    prod(quinta, 'Couve Portuguesa', 'Hortícolas', '🥬', 1.20, 'un', 60, true, 'Todo o ano', 110, 'Couve tenra, cortada à mão para caldo verde.'),
-    prod(quinta, 'Abóbora Manteiga', 'Hortícolas', '🎃', 1.80, 'kg', 3, false, 'Outono', 95, 'Doce e cremosa, ideal para sopas e assados.'),
-    prod(quinta, 'Nabo da Terra', 'Hortícolas', '🌿', 1.30, 'kg', 35, true, 'Inverno', 70, 'Nabo de raiz branca, com as rama incluída.'),
-    prod(quinta, 'Pera Rocha', 'Fruta', '🍐', 2.20, 'kg', 48, false, 'Outono', 55, 'Pera Rocha do Oeste, crocante e sumarenta.'),
+    prod(quinta, 'Kiwi Hayward', 'Fruta', 2.40, 'kg', 40, true, 'Outono', 120, 'Kiwi de polpa firme, colhido na quinta e guardado em câmara.'),
+    prod(quinta, 'Maçã Bravo de Esmolfe', 'Fruta', 3.10, 'kg', 25, true, 'Outono', 118, 'Variedade DOP, muito aromática e de calibre pequeno.'),
+    prod(quinta, 'Couve Portuguesa', 'Hortícolas', 1.20, 'un', 60, true, 'Todo o ano', 110, 'Couve tenra, cortada à mão para caldo verde.'),
+    prod(quinta, 'Abóbora Manteiga', 'Hortícolas', 1.80, 'kg', 3, false, 'Outono', 95, 'Doce e cremosa, ideal para sopas e assados.'),
+    prod(quinta, 'Nabo da Terra', 'Hortícolas', 1.30, 'kg', 35, true, 'Inverno', 70, 'Nabo de raiz branca, com as rama incluída.'),
+    prod(quinta, 'Pera Rocha', 'Fruta', 2.20, 'kg', 48, false, 'Outono', 55, 'Pera Rocha do Oeste, crocante e sumarenta.'),
 
     // --- Horta da Serra ---
-    prod(horta, 'Tomate Coração de Boi', 'Hortícolas', '🍅', 2.90, 'kg', 30, false, 'Verão', 115, 'Tomate de polpa carnuda e pouca semente.'),
-    prod(horta, 'Batata de Trás-os-Montes', 'Hortícolas', '🥔', 1.10, 'kg', 120, false, 'Todo o ano', 112, 'Batata de terra fria, boa para assar e para cozer.'),
-    prod(horta, 'Cebola Roxa', 'Hortícolas', '🧅', 1.40, 'kg', 50, true, 'Todo o ano', 100, 'Cebola roxa doce, excelente em saladas.'),
-    prod(horta, 'Alface Frisada', 'Hortícolas', '🥗', 0.90, 'un', 4, true, 'Primavera', 80, 'Colhida no próprio dia da entrega.'),
-    prod(horta, 'Curgete', 'Hortícolas', '🥒', 1.60, 'kg', 28, false, 'Verão', 75, 'Curgete tenra de casca fina, colhida pequena.'),
-    prod(horta, 'Feijão Verde', 'Hortícolas', '🫛', 2.40, 'kg', 18, true, 'Verão', 65, 'Feijão verde largo, apanhado à mão.'),
-    prod(horta, 'Cenoura', 'Hortícolas', '🥕', 1.25, 'kg', 65, false, 'Todo o ano', 50, 'Cenoura de areia, doce e estaladiça.'),
+    prod(horta, 'Tomate Coração de Boi', 'Hortícolas', 2.90, 'kg', 30, false, 'Verão', 115, 'Tomate de polpa carnuda e pouca semente.'),
+    prod(horta, 'Batata de Trás-os-Montes', 'Hortícolas', 1.10, 'kg', 120, false, 'Todo o ano', 112, 'Batata de terra fria, boa para assar e para cozer.'),
+    prod(horta, 'Cebola Roxa', 'Hortícolas', 1.40, 'kg', 50, true, 'Todo o ano', 100, 'Cebola roxa doce, excelente em saladas.'),
+    prod(horta, 'Alface Frisada', 'Hortícolas', 0.90, 'un', 4, true, 'Primavera', 80, 'Colhida no próprio dia da entrega.'),
+    prod(horta, 'Curgete', 'Hortícolas', 1.60, 'kg', 28, false, 'Verão', 75, 'Curgete tenra de casca fina, colhida pequena.'),
+    prod(horta, 'Feijão Verde', 'Hortícolas', 2.40, 'kg', 18, true, 'Verão', 65, 'Feijão verde largo, apanhado à mão.'),
+    prod(horta, 'Cenoura', 'Hortícolas', 1.25, 'kg', 65, false, 'Todo o ano', 50, 'Cenoura de areia, doce e estaladiça.'),
 
     // --- Apiário do Minho ---
-    prod(apiario, 'Mel de Urze', 'Mel', '🍯', 7.50, 'un', 18, true, 'Todo o ano', 170, 'Frasco de 500 g. Mel escuro, denso e de sabor intenso.'),
-    prod(apiario, 'Mel de Rosmaninho', 'Mel', '🍯', 6.80, 'un', 22, true, 'Todo o ano', 168, 'Frasco de 500 g. Suave, floral e de cor clara.'),
-    prod(apiario, 'Mel de Castanheiro', 'Mel', '🍯', 8.20, 'un', 12, true, 'Todo o ano', 140, 'Frasco de 500 g. Amargo no fim, muito aromático.'),
-    prod(apiario, 'Pólen Fresco', 'Outros', '🌼', 9.00, 'un', 10, true, 'Primavera', 90, 'Pólen apanhado na Serra da Peneda e congelado no dia.'),
-    prod(apiario, 'Própolis', 'Outros', '🐝', 11.50, 'un', 6, true, 'Todo o ano', 40, 'Frasco de 30 ml de tintura de própolis.'),
+    prod(apiario, 'Mel de Urze', 'Mel', 7.50, 'un', 18, true, 'Todo o ano', 170, 'Frasco de 500 g. Mel escuro, denso e de sabor intenso.'),
+    prod(apiario, 'Mel de Rosmaninho', 'Mel', 6.80, 'un', 22, true, 'Todo o ano', 168, 'Frasco de 500 g. Suave, floral e de cor clara.'),
+    prod(apiario, 'Mel de Castanheiro', 'Mel', 8.20, 'un', 12, true, 'Todo o ano', 140, 'Frasco de 500 g. Amargo no fim, muito aromático.'),
+    prod(apiario, 'Pólen Fresco', 'Outros', 9.00, 'un', 10, true, 'Primavera', 90, 'Pólen apanhado na Serra da Peneda e congelado no dia.'),
+    prod(apiario, 'Própolis', 'Outros', 11.50, 'un', 6, true, 'Todo o ano', 40, 'Frasco de 30 ml de tintura de própolis.'),
 
     // --- Queijaria do Lima ---
-    prod(queijaria, 'Queijo de Cabra Curado', 'Queijo', '🧀', 12.50, 'kg', 8, false, 'Todo o ano', 145, 'Cura mínima de 60 dias em cave de pedra.'),
-    prod(queijaria, 'Queijo Fresco de Vaca', 'Queijo', '🧀', 4.20, 'un', 20, false, 'Todo o ano', 130, 'Feito de manhã, para comer no próprio dia.'),
-    prod(queijaria, 'Requeijão', 'Queijo', '🥛', 3.10, 'un', 14, false, 'Todo o ano', 85, 'Requeijão de ovelha, para comer com doce de abóbora.'),
-    prod(queijaria, 'Queijo de Ovelha Amanteigado', 'Queijo', '🧀', 15.90, 'kg', 5, false, 'Inverno', 45, 'Pasta mole e amanteigada, cura de 45 dias.'),
+    prod(queijaria, 'Queijo de Cabra Curado', 'Queijo', 12.50, 'kg', 8, false, 'Todo o ano', 145, 'Cura mínima de 60 dias em cave de pedra.'),
+    prod(queijaria, 'Queijo Fresco de Vaca', 'Queijo', 4.20, 'un', 20, false, 'Todo o ano', 130, 'Feito de manhã, para comer no próprio dia.'),
+    prod(queijaria, 'Requeijão', 'Queijo', 3.10, 'un', 14, false, 'Todo o ano', 85, 'Requeijão de ovelha, para comer com doce de abóbora.'),
+    prod(queijaria, 'Queijo de Ovelha Amanteigado', 'Queijo', 15.90, 'kg', 5, false, 'Inverno', 45, 'Pasta mole e amanteigada, cura de 45 dias.'),
 
     // --- Adega do Alvarinho ---
-    prod(adega, 'Alvarinho Reserva 2023', 'Vinho', '🍾', 14.50, 'un', 60, false, 'Todo o ano', 105, 'Garrafa de 750 ml. Estágio de 6 meses sobre borras finas.'),
-    prod(adega, 'Vinho Verde Loureiro 2024', 'Vinho', '🍷', 5.90, 'un', 36, false, 'Todo o ano', 100, 'Garrafa de 750 ml. Fresco, cítrico e leve.'),
-    prod(adega, 'Vinho Tinto da Casa', 'Vinho', '🍷', 6.40, 'un', 42, false, 'Todo o ano', 72, 'Garrafa de 750 ml. Tinto jovem de vinhas velhas.'),
-    prod(adega, 'Espumante Bruto', 'Vinho', '🥂', 11.80, 'un', 24, false, 'Todo o ano', 35, 'Garrafa de 750 ml. Método clássico, 18 meses de cave.'),
+    prod(adega, 'Alvarinho Reserva 2023', 'Vinho', 14.50, 'un', 60, false, 'Todo o ano', 105, 'Garrafa de 750 ml. Estágio de 6 meses sobre borras finas.'),
+    prod(adega, 'Vinho Verde Loureiro 2024', 'Vinho', 5.90, 'un', 36, false, 'Todo o ano', 100, 'Garrafa de 750 ml. Fresco, cítrico e leve.'),
+    prod(adega, 'Vinho Tinto da Casa', 'Vinho', 6.40, 'un', 42, false, 'Todo o ano', 72, 'Garrafa de 750 ml. Tinto jovem de vinhas velhas.'),
+    prod(adega, 'Espumante Bruto', 'Vinho', 11.80, 'un', 24, false, 'Todo o ano', 35, 'Garrafa de 750 ml. Método clássico, 18 meses de cave.'),
 
     // --- Pomar das Caldas (produtor PENDENTE: não aparece no catálogo) ---
-    prod(pomar, 'Cereja da Cova da Beira', 'Fruta', '🍒', 5.50, 'kg', 30, false, 'Primavera', 2, 'Cereja de calibre grande, apanhada à mão.'),
-    prod(pomar, 'Ameixa Rainha Cláudia', 'Fruta', '🍑', 3.80, 'kg', 25, false, 'Verão', 2, 'Ameixa verde muito doce, da variedade Rainha Cláudia.'),
+    prod(pomar, 'Cereja da Cova da Beira', 'Fruta', 5.50, 'kg', 30, false, 'Primavera', 2, 'Cereja de calibre grande, apanhada à mão.'),
+    prod(pomar, 'Ameixa Rainha Cláudia', 'Fruta', 3.80, 'kg', 25, false, 'Verão', 2, 'Ameixa verde muito doce, da variedade Rainha Cláudia.'),
   ]);
 
   // Atalhos por nome, para as encomendas ficarem legíveis
@@ -291,7 +311,7 @@ async function seed() {
     {
       produtor: quinta._id, lote: 'Lote de 50 kg de Kiwi Hayward',
       descricao: 'Excedente da colheita de outubro. Levantamento na quinta, em Arcozelo.',
-      imagem: criarImagem('Lote de Kiwi', 'Fruta', '🥝'),
+      imagem: criarImagem('Lote de Kiwi', 'Fruta'),
       precoBase: 60, incremento: 5,
       licitacaoAtual: { valor: 75, comprador: carla._id, nome: carla.nome },
       terminaEm: daquiA(3), estado: 'ativo', data: haDias(1),
@@ -299,7 +319,7 @@ async function seed() {
     {
       produtor: apiario._id, lote: 'Lote de 30 frascos de Mel de Urze',
       descricao: 'Mel de urze de 500 g, colheita deste ano. Ideal para revenda.',
-      imagem: criarImagem('Lote de Mel', 'Mel', '🍯'),
+      imagem: criarImagem('Lote de Mel', 'Mel'),
       precoBase: 150, incremento: 10,
       licitacaoAtual: { valor: 180, comprador: lagar._id, nome: lagar.nome },
       terminaEm: daquiA(5), estado: 'ativo', data: haDias(2),
@@ -307,7 +327,7 @@ async function seed() {
     {
       produtor: adega._id, lote: 'Lote de 12 garrafas de Alvarinho Reserva',
       descricao: 'Caixa de madeira com 12 garrafas da reserva de 2023.',
-      imagem: criarImagem('Lote de Alvarinho', 'Vinho', '🍾'),
+      imagem: criarImagem('Lote de Alvarinho', 'Vinho'),
       precoBase: 120, incremento: 10,
       licitacaoAtual: { valor: 120, comprador: null, nome: '' },
       terminaEm: daquiA(6), estado: 'ativo', data: haDias(0),
@@ -315,7 +335,7 @@ async function seed() {
     {
       produtor: horta._id, lote: 'Lote de 80 kg de Batata de Trás-os-Montes',
       descricao: 'Saldo de armazém. Levantamento em Viana do Castelo.',
-      imagem: criarImagem('Lote de Batata', 'Hortícolas', '🥔'),
+      imagem: criarImagem('Lote de Batata', 'Hortícolas'),
       precoBase: 70, incremento: 5,
       licitacaoAtual: { valor: 110, comprador: lagar._id, nome: lagar.nome },
       terminaEm: haDias(4), estado: 'terminado', data: haDias(9),
@@ -323,7 +343,7 @@ async function seed() {
     {
       produtor: queijaria._id, lote: 'Lote de 20 queijos de cabra curados',
       descricao: 'Queijos de 400 g com cura de 60 dias.',
-      imagem: criarImagem('Lote de Queijo', 'Queijo', '🧀'),
+      imagem: criarImagem('Lote de Queijo', 'Queijo'),
       precoBase: 200, incremento: 10,
       licitacaoAtual: { valor: 260, comprador: carla._id, nome: carla.nome },
       terminaEm: haDias(9), estado: 'terminado', data: haDias(16),

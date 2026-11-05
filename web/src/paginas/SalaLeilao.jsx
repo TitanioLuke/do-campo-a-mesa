@@ -49,7 +49,7 @@ export default function SalaLeilao() {
                   {leilao.produtor?.nome} · base {euros(leilao.precoBase)} · incremento {euros(leilao.incremento)}
                 </p>
               </div>
-              <span className="etiqueta estado-confirmada">👥 {participantes}</span>
+              <span className="etiqueta estado-confirmada">{participantes} na sala</span>
             </div>
 
             <p className="text-black-50">{leilao.descricao}</p>
