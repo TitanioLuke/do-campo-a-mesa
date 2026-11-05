@@ -3,6 +3,7 @@ import { api, euros } from '../../servicos/api';
 import { useAuth } from '../../contexto/AuthContext';
 import { useAvisos } from '../../contexto/AvisosContext';
 import NavProdutor from './NavProdutor';
+import ModalConfirmar from '../../componentes/ModalConfirmar';
 
 const CATEGORIAS = ['Hortícolas', 'Fruta', 'Mel', 'Vinho', 'Queijo', 'Outros'];
 const UNIDADES = ['kg', 'un', 'L', 'dz', 'cx'];
@@ -22,6 +23,7 @@ export default function MeusProdutos() {
   const [produtos, setProdutos] = useState([]);
   const [form, setForm] = useState(VAZIO);
   const [aEditar, setAEditar] = useState(null); // _id do produto em edição
+  const [aApagar, setAApagar] = useState(null); // produto à espera de confirmação
   const { sucesso, erro } = useAvisos();
 
   const carregar = () =>
@@ -73,8 +75,9 @@ export default function MeusProdutos() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  async function apagar(produto) {
-    if (!confirm(`Apagar "${produto.nome}"?`)) return;
+  async function apagar() {
+    const produto = aApagar;
+    setAApagar(null);
     try {
       await api.del(`/products/${produto._id}`);
       sucesso(`"${produto.nome}" apagado.`);
@@ -173,7 +176,7 @@ export default function MeusProdutos() {
                   <td className={p.stock < 5 ? 'text-danger fw-bold' : ''}>{p.stock}</td>
                   <td className="text-end">
                     <button className="btn btn-sm btn-outline-secondary me-1" onClick={() => editar(p)}>Editar</button>
-                    <button className="btn btn-sm btn-outline-danger" onClick={() => apagar(p)}>Apagar</button>
+                    <button className="btn btn-sm btn-outline-danger" onClick={() => setAApagar(p)}>Apagar</button>
                   </td>
                 </tr>
               ))}
@@ -182,6 +185,15 @@ export default function MeusProdutos() {
         </div>
         {produtos.length === 0 && <p className="text-black-50 small mb-0">Ainda não tem produtos.</p>}
       </div>
+
+      {aApagar && (
+        <ModalConfirmar
+          titulo="Apagar produto"
+          mensagem={`"${aApagar.nome}" deixa de aparecer no catálogo. As encomendas já feitas não são afetadas, porque guardam uma cópia do nome e do preço.`}
+          aoConfirmar={apagar}
+          aoFechar={() => setAApagar(null)}
+        />
+      )}
     </>
   );
 }

@@ -4,6 +4,7 @@ import { api, dataPt, euros } from '../../servicos/api';
 import { useAuth } from '../../contexto/AuthContext';
 import { useAvisos } from '../../contexto/AvisosContext';
 import NavProdutor from './NavProdutor';
+import ModalConfirmar from '../../componentes/ModalConfirmar';
 import Contador from '../../componentes/Contador';
 
 // Colunas secundárias das tabelas: escondidas no telemóvel e visíveis a
@@ -16,6 +17,7 @@ export default function MeusLeiloes() {
   const { utilizador } = useAuth();
   const [leiloes, setLeiloes] = useState([]);
   const [form, setForm] = useState(VAZIO);
+  const [aApagar, setAApagar] = useState(null); // leilão à espera de confirmação
   const { sucesso, erro } = useAvisos();
 
   const carregar = () =>
@@ -53,11 +55,12 @@ export default function MeusLeiloes() {
     }
   }
 
-  async function apagar(leilao) {
-    if (!confirm(`Apagar o leilão "${leilao.lote}"?`)) return;
+  async function apagar() {
+    const leilao = aApagar;
+    setAApagar(null);
     try {
       await api.del(`/auctions/${leilao._id}`);
-      sucesso('Leilão apagado.');
+      sucesso(`Leilão "${leilao.lote}" apagado.`);
       carregar();
     } catch (e) {
       erro(e.message);
@@ -126,7 +129,7 @@ export default function MeusLeiloes() {
                     <div className="small text-black-50">{dataPt(l.terminaEm)}</div>
                   </td>
                   <td className="text-end">
-                    <button className="btn btn-sm btn-outline-danger" onClick={() => apagar(l)}>Apagar</button>
+                    <button className="btn btn-sm btn-outline-danger" onClick={() => setAApagar(l)}>Apagar</button>
                   </td>
                 </tr>
               ))}
@@ -135,6 +138,19 @@ export default function MeusLeiloes() {
         </div>
         {leiloes.length === 0 && <p className="text-black-50 small mb-0">Ainda não criou leilões.</p>}
       </div>
+
+      {aApagar && (
+        <ModalConfirmar
+          titulo="Apagar leilão"
+          mensagem={
+            aApagar.licitacaoAtual.nome
+              ? `O leilão "${aApagar.lote}" já tem licitações, e o histórico é apagado com ele. A melhor licitação é de ${aApagar.licitacaoAtual.nome}.`
+              : `O leilão "${aApagar.lote}" ainda não tem licitações e deixa de estar visível.`
+          }
+          aoConfirmar={apagar}
+          aoFechar={() => setAApagar(null)}
+        />
+      )}
     </>
   );
 }

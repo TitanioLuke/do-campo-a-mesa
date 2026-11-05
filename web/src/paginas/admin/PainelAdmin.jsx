@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { API_URL, api, dataPt, euros } from '../../servicos/api';
 import { useSocket } from '../../contexto/SocketContext';
+import { useAvisos } from '../../contexto/AvisosContext';
 import Contador from '../../componentes/Contador';
 import Estrelas from '../../componentes/Estrelas';
 import EtiquetaEstado from '../../componentes/EtiquetaEstado';
+import ModalConfirmar from '../../componentes/ModalConfirmar';
 
 // Colunas secundárias das tabelas: escondidas no telemóvel e visíveis a
 // partir de md (768 px), para os botões de ação caberem no ecrã pequeno.
@@ -28,8 +30,10 @@ export default function PainelAdmin() {
   const [utilizadores, setUtilizadores] = useState([]);
   const [encomendas, setEncomendas] = useState([]);
   const [apiViva, setApiViva] = useState(null);
+  const [aApagar, setAApagar] = useState(null); // avaliação à espera de confirmação
 
   const { ligado } = useSocket();
+  const { sucesso, erro } = useAvisos();
 
   function carregar() {
     api.get('/admin/estatisticas').then(setEstatisticas).catch(() => {});
@@ -44,19 +48,35 @@ export default function PainelAdmin() {
   useEffect(carregar, []);
 
   async function validar(produtor, aprovado) {
-    await api.patch(`/admin/produtores/${produtor._id}`, { aprovado });
-    carregar();
+    try {
+      await api.patch(`/admin/produtores/${produtor._id}`, { aprovado });
+      sucesso(`${produtor.nome}: registo ${aprovado}.`);
+      carregar();
+    } catch (e) {
+      erro(e.message);
+    }
   }
 
   async function moderar(avaliacao, oculta) {
-    await api.patch(`/admin/reviews/${avaliacao._id}`, { oculta });
-    carregar();
+    try {
+      await api.patch(`/admin/reviews/${avaliacao._id}`, { oculta });
+      sucesso(oculta ? 'Avaliação escondida do público.' : 'Avaliação mantida visível.');
+      carregar();
+    } catch (e) {
+      erro(e.message);
+    }
   }
 
-  async function apagarAvaliacao(avaliacao) {
-    if (!confirm('Apagar definitivamente esta avaliação?')) return;
-    await api.del(`/admin/reviews/${avaliacao._id}`);
-    carregar();
+  async function apagarAvaliacao() {
+    const avaliacao = aApagar;
+    setAApagar(null);
+    try {
+      await api.del(`/admin/reviews/${avaliacao._id}`);
+      sucesso('Avaliação apagada.');
+      carregar();
+    } catch (e) {
+      erro(e.message);
+    }
   }
 
   const indicadores = estatisticas && [
@@ -179,7 +199,7 @@ export default function PainelAdmin() {
                   <div className="d-flex gap-2">
                     <button className="btn btn-sm btn-outline-secondary" onClick={() => moderar(a, false)}>Manter</button>
                     <button className="btn btn-sm btn-outline-warning" onClick={() => moderar(a, true)}>Esconder</button>
-                    <button className="btn btn-sm btn-outline-danger" onClick={() => apagarAvaliacao(a)}>Apagar</button>
+                    <button className="btn btn-sm btn-outline-danger" onClick={() => setAApagar(a)}>Apagar</button>
                   </div>
                 </div>
               </div>
@@ -257,6 +277,15 @@ export default function PainelAdmin() {
           </div>
           {encomendas.length === 0 && <p className="text-black-50 small mb-0">Ainda não há encomendas.</p>}
         </div>
+      )}
+
+      {aApagar && (
+        <ModalConfirmar
+          titulo="Apagar avaliação"
+          mensagem={`A avaliação de ${aApagar.nome} é apagada para sempre e a média do produto é recalculada. Se só a quiser tirar da vista, use "Esconder".`}
+          aoConfirmar={apagarAvaliacao}
+          aoFechar={() => setAApagar(null)}
+        />
       )}
     </>
   );
