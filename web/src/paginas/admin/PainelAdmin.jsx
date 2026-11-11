@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { API_URL, api, dataPt, euros } from '../../servicos/api';
 import { useSocket } from '../../contexto/SocketContext';
 import { useAvisos } from '../../contexto/AvisosContext';
+import { useListaLeiloes } from '../../hooks/useListaLeiloes';
 import Contador from '../../componentes/Contador';
 import Estrelas from '../../componentes/Estrelas';
 import EtiquetaEstado from '../../componentes/EtiquetaEstado';
@@ -26,7 +27,6 @@ export default function PainelAdmin() {
   const [estatisticas, setEstatisticas] = useState(null);
   const [pendentes, setPendentes] = useState([]);
   const [denunciadas, setDenunciadas] = useState([]);
-  const [leiloes, setLeiloes] = useState([]);
   const [utilizadores, setUtilizadores] = useState([]);
   const [encomendas, setEncomendas] = useState([]);
   const [apiViva, setApiViva] = useState(null);
@@ -34,12 +34,12 @@ export default function PainelAdmin() {
 
   const { ligado } = useSocket();
   const { sucesso, erro } = useAvisos();
+  const { leiloes } = useListaLeiloes('?estado=ativo'); // em tempo real
 
   function carregar() {
     api.get('/admin/estatisticas').then(setEstatisticas).catch(() => {});
     api.get('/admin/produtores?aprovado=pendente').then(setPendentes).catch(() => {});
     api.get('/admin/reviews?denunciadas=true').then(setDenunciadas).catch(() => {});
-    api.get('/auctions?estado=ativo').then(setLeiloes).catch(() => {});
     api.get('/admin/utilizadores').then(setUtilizadores).catch(() => {});
     api.get('/admin/encomendas').then(setEncomendas).catch(() => {});
     api.get('/health').then(() => setApiViva(true)).catch(() => setApiViva(false));

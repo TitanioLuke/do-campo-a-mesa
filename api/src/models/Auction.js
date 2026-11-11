@@ -4,6 +4,13 @@ const mongoose = require('mongoose');
  * Coleção `auctions`.
  * `licitacaoAtual` é EMBEBIDO porque é um único valor lido sempre com o leilão.
  * O histórico de licitações fica na coleção `bids` (linking): cresce sem limite.
+ *
+ * Um leilão passa por três estados:
+ *   agendado  -> criado, mas ainda não abriu. Ninguém pode licitar.
+ *   ativo     -> entre `comecaEm` e `terminaEm`. É a janela das licitações.
+ *   terminado -> passou de `terminaEm`. Quem tiver a licitação mais alta ganha.
+ * As passagens de um estado para o outro são feitas pelo servidor (ver
+ * `sockets/leiloes.js`), nunca pelo cliente.
  */
 const auctionSchema = new mongoose.Schema(
   {
@@ -18,8 +25,14 @@ const auctionSchema = new mongoose.Schema(
       comprador: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
       nome: { type: String, default: '' }, // cópia do nome, para mostrar na sala
     },
+    comecaEm: { type: Date, required: true },
     terminaEm: { type: Date, required: true },
-    estado: { type: String, enum: ['ativo', 'terminado'], default: 'ativo' },
+    estado: {
+      type: String,
+      enum: ['agendado', 'ativo', 'terminado'],
+      default: 'agendado',
+      index: true,
+    },
   },
   { timestamps: true }
 );

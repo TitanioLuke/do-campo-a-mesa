@@ -328,7 +328,7 @@ paths:
       tags: [Leilões]
       summary: Lista de leilões
       parameters:
-        - { name: estado, in: query, schema: { type: string, enum: [ativo, terminado] } }
+        - { name: estado, in: query, schema: { type: string, enum: [agendado, ativo, terminado] } }
         - { name: produtor, in: query, schema: { type: string } }
         - { name: aTerminar, in: query, description: "Termina na próxima hora ($lt)", schema: { type: boolean } }
       responses:
@@ -341,7 +341,11 @@ paths:
                 items: { $ref: '#/components/schemas/Leilao' }
     post:
       tags: [Leilões]
-      summary: Criar leilão (apenas produtor)
+      summary: Agendar leilão (apenas produtor)
+      description: >
+        O leilão nasce no estado `agendado` e abre daqui a `minutosAteComecar`
+        (entre 3 e 60), ficando `ativo` durante `duracaoMinutos`. É o servidor
+        que o abre e o fecha na hora certa.
       security: [{ bearerAuth: [] }]
       requestBody:
         required: true
@@ -349,21 +353,22 @@ paths:
           application/json:
             schema:
               type: object
-              required: [lote, precoBase, duracaoMinutos]
+              required: [lote, precoBase, minutosAteComecar, duracaoMinutos]
               properties:
                 lote: { type: string }
                 descricao: { type: string }
                 imagem: { type: string }
                 precoBase: { type: number }
                 incremento: { type: number, default: 5 }
+                minutosAteComecar: { type: integer, minimum: 3, maximum: 60 }
                 duracaoMinutos: { type: integer, minimum: 1 }
       responses:
         '201':
-          description: Leilão criado
+          description: Leilão agendado
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Leilao' }
-        '400': { description: Dados inválidos }
+        '400': { description: Dados inválidos ou tempo até começar fora de 3 a 60 minutos }
         '401': { description: Token em falta ou inválido }
         '403': { description: Sem permissão }
 
@@ -677,8 +682,12 @@ components:
             valor: { type: number }
             comprador: { type: string, nullable: true }
             nome: { type: string }
+        comecaEm: { type: string, format: date-time, description: Quando o leilão abre }
         terminaEm: { type: string, format: date-time }
-        estado: { type: string, enum: [ativo, terminado] }
+        estado:
+          type: string
+          enum: [agendado, ativo, terminado]
+          description: Mudado apenas pelo servidor, quando a hora de abrir ou de fechar chega
 
     Licitacao:
       type: object

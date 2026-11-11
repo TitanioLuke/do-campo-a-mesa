@@ -2,17 +2,17 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, euros } from '../../servicos/api';
 import { useSocket } from '../../contexto/SocketContext';
+import { useListaLeiloes } from '../../hooks/useListaLeiloes';
 import NavProdutor from './NavProdutor';
 import Contador from '../../componentes/Contador';
 
 export default function PainelProdutor() {
   const [dados, setDados] = useState(null);
-  const [leiloes, setLeiloes] = useState([]);
   const { socket } = useSocket();
+  const { leiloes } = useListaLeiloes('?estado=ativo');
 
   function carregar() {
     api.get('/producers/me/estatisticas').then(setDados).catch(() => {});
-    api.get('/auctions?estado=ativo').then(setLeiloes).catch(() => {});
   }
 
   useEffect(carregar, []);

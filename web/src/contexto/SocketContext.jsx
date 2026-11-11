@@ -5,7 +5,12 @@ import { useAuth } from './AuthContext';
 import { useAvisos } from './AvisosContext';
 
 /**
- * Uma única ligação WebSocket por utilizador, partilhada por toda a aplicação.
+ * Uma única ligação WebSocket, partilhada por toda a aplicação.
+ *
+ * A ligação existe mesmo sem sessão iniciada: um visitante também acompanha os
+ * leilões em direto, só não pode licitar (o servidor recusa). Quando a sessão
+ * muda, a ligação é refeita, porque a identidade é fixada no handshake.
+ *
  * Aqui tratam-se as notificações que chegam à sala pessoal (`user:<id>`);
  * as salas de leilão são tratadas no hook useLeilao.
  */
@@ -18,14 +23,7 @@ export function SocketProvider({ children }) {
   const [ligado, setLigado] = useState(false);
 
   useEffect(() => {
-    if (!temSessao) {
-      socketRef.current?.disconnect();
-      socketRef.current = null;
-      setLigado(false);
-      return;
-    }
-
-    const socket = io(API_URL, { auth: { token: localStorage.getItem('token') } });
+    const socket = io(API_URL, { auth: { token: localStorage.getItem('token') || undefined } });
     socketRef.current = socket;
 
     socket.on('connect', () => setLigado(true));

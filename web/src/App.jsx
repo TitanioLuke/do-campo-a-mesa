@@ -51,15 +51,14 @@ export default function App() {
                   <Route path="/produtores" element={<Produtores />} />
                   <Route path="/produtores/:id" element={<PaginaProdutor />} />
                   <Route path="/leiloes" element={<Leiloes />} />
+                  {/* A sala é pública: um visitante acompanha o leilão em direto,
+                      só não pode licitar (o servidor recusa sem sessão). */}
+                  <Route path="/leiloes/:id" element={<SalaLeilao />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/registo" element={<Registo />} />
                   <Route path="/carrinho" element={<Carrinho />} />
 
                   {/* --- Comprador --- */}
-                  <Route
-                    path="/leiloes/:id"
-                    element={<RotaProtegida papeis={['comprador', 'produtor', 'admin']}><SalaLeilao /></RotaProtegida>}
-                  />
                   <Route
                     path="/encomendas"
                     element={<RotaProtegida papeis={['comprador']}><MinhasEncomendas /></RotaProtegida>}

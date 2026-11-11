@@ -165,9 +165,8 @@ ainda não foi validado: é o que permite demonstrar a aprovação no painel do 
   só depois de ter uma encomenda entregue, e só uma vez por produto / por produtor.
 - Denunciar avaliações para moderação.
 - Entrar na sala de um leilão e licitar: contagem decrescente, número de participantes,
-  histórico de licitações, atalhos para os valores seguintes e validação do mínimo no
-  servidor. Os atalhos apenas **preenchem** o campo; a licitação só sai depois de
-  confirmada numa janela que diz ao que o comprador se está a comprometer.
+  histórico de licitações, atalhos que licitam logo o valor seguinte e validação do
+  mínimo no servidor.
 - **Perfil próprio** com os seus dados e um resumo das compras (encomendas, produtores a
   quem comprou e total gasto).
 
@@ -179,7 +178,8 @@ ainda não foi validado: é o que permite demonstrar a aprovação no painel do 
 - Gestão do catálogo: criar, editar e apagar produtos, com upload de fotografia.
 - Encomendas recebidas, com filtro por estado e botão para avançar o estado
   (o comprador é notificado na hora).
-- Criar leilões (lote, preço base, incremento e duração) e acompanhar os que estão a decorrer.
+- **Agendar leilões** (lote, preço base, incremento, quanto falta para abrir e duração).
+  O leilão abre e fecha sozinho à hora marcada.
 - Editar a sua **página pública** (nome, concelho, telefone e apresentação), com
   pré-visualização ao lado do formulário. O mapa é colocado automaticamente no concelho
   escolhido — ninguém tem de copiar latitudes e longitudes à mão.
@@ -574,23 +574,31 @@ da resposta e colá-lo no botão **Authorize**.
 
 ### 14.1. Salas
 
-O Socket.io autentica a ligação com **o mesmo JWT da API**, enviado no handshake:
+O Socket.io usa **o mesmo JWT da API**, enviado no handshake, mas a autenticação é
+*opcional*: quem não tiver sessão liga-se à mesma e acompanha os leilões, apenas fica sem
+`socket.user` e por isso não consegue licitar.
 
 ```js
 io.use((socket, next) => {
   const { token } = socket.handshake.auth || {};
-  try { socket.user = jwt.verify(token, process.env.JWT_SECRET); next(); }
-  catch { next(new Error('Não autorizado')); }
+  socket.user = null;
+  if (token) {
+    try { socket.user = jwt.verify(token, process.env.JWT_SECRET); }
+    catch { /* token inválido: segue como visitante */ }
+  }
+  next();
 });
 ```
 
-Duas famílias de salas:
+Três famílias de salas:
 
-- `user:<id>` — sala pessoal, em que cada socket entra assim que liga. Recebe as notificações
-  de encomendas, de leilões ganhos/fechados e da validação do registo de produtor.
+- `leiloes` — sala única onde **todos** entram ao ligar-se. Mantém as listas de leilões
+  atualizadas em qualquer página (ver 14.4).
 - `leilao:<id>` — uma sala por leilão, em que o cliente entra com o evento `entrar` e sai com
   `sair`. A presença (número de participantes) é recalculada ao entrar, ao sair e no evento
   `disconnecting`.
+- `user:<id>` — sala pessoal, só para quem tem sessão. Recebe as notificações de encomendas,
+  de leilões ganhos/fechados e da validação do registo de produtor.
 
 ### 14.2. O desafio técnico: duas licitações ao mesmo tempo
 
@@ -636,7 +644,50 @@ escrita sobrepunha-se à primeira e um comprador ficava com a licitação "perdi
 Testado com dois clientes a enviar 65 € no mesmo instante: uma licitação foi aceite, a outra
 recebeu `recusada`, e o estado no servidor e nos dois clientes ficou igual.
 
-### 14.3. O que uma licitação compromete (e onde entra o dinheiro)
+### 14.3. Os três estados de um leilão
+
+Um leilão não nasce aberto. Quem o cria escolhe daqui a quanto tempo abre — entre
+**3 e 60 minutos** — e quanto tempo dura a partir daí:
+
+```
+agendado  ──(comecaEm)──>  ativo  ──(terminaEm)──>  terminado
+```
+
+O tempo de espera não é um capricho: sem ele, um leilão de 10 minutos criado às 15h00
+estaria a meio antes de alguém dar por ele. Com o aviso, os compradores entram na sala
+antes de abrir e ficam a ver a contagem decrescente.
+
+**As mudanças de estado são só do servidor.** Um `setInterval` de 3 em 3 segundos
+procura leilões agendados cuja hora chegou (`comecaEm: { $lte: agora }`) e ativos que
+passaram da hora (`terminaEm: { $lt: agora }`), muda-lhes o estado e avisa as salas.
+O cliente nunca decide que um leilão abriu: limita-se a mostrar o que recebe. É por isso
+que o relógio do computador de quem licita não tem qualquer influência.
+
+Licitar num leilão que ainda não abriu é impossível sem código extra, porque o filtro
+atómico da licitação já exige `estado: 'ativo'`.
+
+### 14.4. Tudo em tempo real, não só dentro da sala
+
+Além das salas por leilão, há uma sala `leiloes` onde **todos os clientes entram ao
+ligar-se**, com ou sem sessão iniciada. É ela que mantém vivas as *listas* de leilões —
+a página inicial, a lista de leilões, o painel do produtor e o do administrador:
+
+| Evento | Quando | O que o cliente faz |
+| --- | --- | --- |
+| `leilao-atualizado` | alguém licitou | corrige só esse leilão na lista |
+| `leiloes-mudaram` | um leilão abriu, fechou, nasceu ou foi apagado | volta a pedir a lista |
+
+A distinção importa: uma licitação só muda um valor, mas abrir ou fechar muda **a que
+lista o leilão pertence**, e aí não chega corrigir um número.
+
+No cliente isto está num hook, `useListaLeiloes`, por isso qualquer página fica em tempo
+real sem saber nada de WebSockets.
+
+A autenticação do socket passou a ser **opcional**: sem token o cliente liga-se na mesma
+e acompanha tudo, mas fica sem `socket.user` e o servidor recusa-lhe a licitação. Assim
+um visitante vê os leilões a mexer antes sequer de ter conta.
+
+### 14.5. O que uma licitação compromete (e onde entra o dinheiro)
 
 A plataforma **não tem pagamentos online**. Nem nas encomendas, nem nos leilões: o
 pagamento é sempre combinado diretamente com o produtor, no levantamento ou na entrega.
@@ -650,22 +701,29 @@ o produtor contacta-o para combinar o resto. A interface diz isto em dois sítio
 baixo do formulário e na janela de confirmação — porque é precisamente a dúvida que um
 utilizador tem ao ver um botão que aumenta o valor em 25 €.
 
-É também por isto que os atalhos deixaram de licitar sozinhos: com um clique a valer um
-compromisso de compra, o passo de confirmação não é cerimónia, é necessário.
+Como não há dinheiro a mexer, licitar é um clique só: os atalhos (+5, +10, +25 acima do
+mínimo) enviam a licitação logo, sem passo de confirmação, que é o que se espera de um
+leilão em direto onde cada segundo conta.
 
-### 14.4. Relógio sincronizado
+### 14.6. Relógio sincronizado
 
 O servidor envia apenas `terminaEm` (uma data absoluta). É cada cliente que calcula o tempo que
 falta, de segundo a segundo, no componente `Contador`. Assim não é preciso sincronizar
 contadores entre clientes: todos derivam o mesmo valor da mesma data.
 
-### 14.5. Fecho automático
+### 14.7. Abertura e fecho automáticos
 
-Um `setInterval` de 5 segundos procura leilões ativos cuja data de fim já passou
-(`terminaEm: { $lt: new Date() }`), marca-os como `terminado` e avisa a sala, o vencedor
-(`leilao-ganho`) e o produtor (`leilao-fechado`).
+Um `setInterval` de 3 segundos faz as duas passagens de estado:
 
-### 14.6. Notificações de encomendas
+- **abre** os agendados cuja hora chegou (`comecaEm: { $lte: agora }`) e manda
+  `leilao-comecou` à sala, para a página passar de contagem para formulário sozinha;
+- **fecha** os ativos que passaram da hora (`terminaEm: { $lt: agora }`), marca-os como
+  `terminado` e avisa a sala, o vencedor (`leilao-ganho`) e o produtor (`leilao-fechado`).
+
+Em qualquer dos casos manda também `leiloes-mudaram` à sala `leiloes`, porque abrir ou
+fechar muda a que listas o leilão pertence.
+
+### 14.8. Notificações de encomendas
 
 Quando o produtor muda o estado de uma encomenda, a rota REST usa o `io` para avisar o comprador
 na sua sala pessoal:

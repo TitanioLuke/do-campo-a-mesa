@@ -4,6 +4,7 @@ import { api } from '../servicos/api';
 import { useCarrinho } from '../contexto/CarrinhoContext';
 import { useAuth } from '../contexto/AuthContext';
 import { useAvisos } from '../contexto/AvisosContext';
+import { useListaLeiloes } from '../hooks/useListaLeiloes';
 import CartaoProduto from '../componentes/CartaoProduto';
 import CartaoLeilao from '../componentes/CartaoLeilao';
 import FiltrosCatalogo from '../componentes/FiltrosCatalogo';
@@ -15,7 +16,6 @@ const FILTRO_INICIAL = {
 export default function Catalogo() {
   const [produtos, setProdutos] = useState([]);
   const [produtores, setProdutores] = useState([]);
-  const [leiloes, setLeiloes] = useState([]);
   const [filtro, setFiltro] = useState(FILTRO_INICIAL);
   const [aCarregar, setACarregar] = useState(true);
 
@@ -23,9 +23,12 @@ export default function Catalogo() {
   const { papel } = useAuth();
   const { erro } = useAvisos();
 
-  // Leilões em destaque e lista de produtores para o filtro (só ao abrir a página)
+  // Leilões em destaque, em tempo real: as licitações dos outros compradores
+  // aparecem aqui sem ser preciso recarregar a página.
+  const { leiloes } = useListaLeiloes('?estado=ativo');
+
+  // Lista de produtores para o filtro (só ao abrir a página)
   useEffect(() => {
-    api.get('/auctions?estado=ativo').then(setLeiloes).catch(() => {});
     api.get('/producers').then(setProdutores).catch(() => {});
   }, []);
 

@@ -1,29 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, dataPt, euros } from '../../servicos/api';
 import { useAuth } from '../../contexto/AuthContext';
 import { useAvisos } from '../../contexto/AvisosContext';
+import { useListaLeiloes } from '../../hooks/useListaLeiloes';
 import NavProdutor from './NavProdutor';
-import ModalConfirmar from '../../componentes/ModalConfirmar';
 import Contador from '../../componentes/Contador';
+import ModalConfirmar from '../../componentes/ModalConfirmar';
 
-// Colunas secundárias das tabelas: escondidas no telemóvel e visíveis a
-// partir de md (768 px), para os botões de ação caberem no ecrã pequeno.
-const SECUNDARIA = 'd-none d-md-table-cell';
-
-const VAZIO = { lote: '', descricao: '', precoBase: '', incremento: 5, duracaoMinutos: 30, imagem: '' };
+const VAZIO = {
+  lote: '', descricao: '', precoBase: '', incremento: 5,
+  minutosAteComecar: 5, duracaoMinutos: 30, imagem: '',
+};
 
 export default function MeusLeiloes() {
   const { utilizador } = useAuth();
-  const [leiloes, setLeiloes] = useState([]);
-  const [form, setForm] = useState(VAZIO);
-  const [aApagar, setAApagar] = useState(null); // leilão à espera de confirmação
   const { sucesso, erro } = useAvisos();
+  // A lista está em tempo real: as licitações dos compradores aparecem aqui
+  const { leiloes, recarregar } = useListaLeiloes(`?produtor=${utilizador._id}`);
 
-  const carregar = () =>
-    api.get(`/auctions?produtor=${utilizador._id}`).then(setLeiloes).catch(() => {});
-
-  useEffect(() => { carregar(); }, [utilizador._id]);
+  const [form, setForm] = useState(VAZIO);
+  const [aApagar, setAApagar] = useState(null);
 
   const mudar = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
 
@@ -45,11 +42,12 @@ export default function MeusLeiloes() {
         ...form,
         precoBase: Number(form.precoBase),
         incremento: Number(form.incremento),
+        minutosAteComecar: Number(form.minutosAteComecar),
         duracaoMinutos: Number(form.duracaoMinutos),
       });
-      sucesso(`Leilão "${form.lote}" criado e já a decorrer.`);
+      sucesso(`Leilão "${form.lote}" agendado para daqui a ${form.minutosAteComecar} minutos.`);
       setForm(VAZIO);
-      carregar();
+      recarregar();
     } catch (e) {
       erro(e.message);
     }
@@ -61,7 +59,7 @@ export default function MeusLeiloes() {
     try {
       await api.del(`/auctions/${leilao._id}`);
       sucesso(`Leilão "${leilao.lote}" apagado.`);
-      carregar();
+      recarregar();
     } catch (e) {
       erro(e.message);
     }
@@ -72,22 +70,27 @@ export default function MeusLeiloes() {
       <NavProdutor titulo="Os meus leilões" />
 
       <div className="painel mb-4">
-        <h2 className="h6">Criar leilão</h2>
+        <h2 className="h6">Agendar leilão</h2>
 
         <form onSubmit={submeter} className="row g-3">
-          <div className="col-12 col-md-6">
+          <div className="col-12 col-md-4">
             <label className="form-label small mb-1" htmlFor="lote">Lote</label>
             <input id="lote" className="form-control" required placeholder="Ex.: Lote de 50 kg de kiwi" value={form.lote} onChange={mudar('lote')} />
           </div>
-          <div className="col-4 col-md-2">
+          <div className="col-6 col-md-2">
             <label className="form-label small mb-1" htmlFor="precoBase">Preço base (€)</label>
             <input id="precoBase" type="number" min="0" step="0.5" className="form-control" required value={form.precoBase} onChange={mudar('precoBase')} />
           </div>
-          <div className="col-4 col-md-2">
+          <div className="col-6 col-md-2">
             <label className="form-label small mb-1" htmlFor="incremento">Incremento (€)</label>
             <input id="incremento" type="number" min="1" step="1" className="form-control" required value={form.incremento} onChange={mudar('incremento')} />
           </div>
-          <div className="col-4 col-md-2">
+          <div className="col-6 col-md-2">
+            <label className="form-label small mb-1" htmlFor="comeca">Começa daqui a (min)</label>
+            <input id="comeca" type="number" min="3" max="60" className="form-control" required value={form.minutosAteComecar} onChange={mudar('minutosAteComecar')} />
+            <small className="text-black-50">entre 3 e 60</small>
+          </div>
+          <div className="col-6 col-md-2">
             <label className="form-label small mb-1" htmlFor="duracao">Duração (min)</label>
             <input id="duracao" type="number" min="1" className="form-control" required value={form.duracaoMinutos} onChange={mudar('duracaoMinutos')} />
           </div>
@@ -106,7 +109,11 @@ export default function MeusLeiloes() {
           </div>
 
           <div className="col-12">
-            <button className="btn btn-terracota">Começar leilão</button>
+            <button className="btn btn-terracota">Agendar leilão</button>
+            <p className="small text-black-50 mt-2 mb-0">
+              O leilão abre sozinho à hora marcada e fecha quando a duração acabar.
+              O tempo até abrir dá aos compradores a hipótese de entrarem na sala a tempo.
+            </p>
           </div>
         </form>
       </div>
@@ -116,16 +123,28 @@ export default function MeusLeiloes() {
         <div className="table-responsive">
           <table className="tabela-simples">
             <thead>
-              <tr><th>Lote</th><th>Atual</th><th className={SECUNDARIA}>Melhor licitação</th><th>Termina</th><th /></tr>
+              <tr><th>Lote</th><th>Atual</th><th className="d-none d-md-table-cell">Melhor licitação</th><th>Estado</th><th /></tr>
             </thead>
             <tbody>
               {leiloes.map((l) => (
                 <tr key={l._id}>
                   <td><Link to={`/leiloes/${l._id}`} className="text-dark fw-semibold">{l.lote}</Link></td>
                   <td>{euros(l.licitacaoAtual.valor)}</td>
-                  <td className={SECUNDARIA}>{l.licitacaoAtual.nome || <span className="text-black-50">—</span>}</td>
+                  <td className="d-none d-md-table-cell">{l.licitacaoAtual.nome || <span className="text-black-50">—</span>}</td>
                   <td>
-                    {l.estado === 'ativo' ? <Contador terminaEm={l.terminaEm} /> : <span className="etiqueta estado-entregue">terminado</span>}
+                    {l.estado === 'agendado' && (
+                      <>
+                        <span className="etiqueta estado-pendente">começa em</span>
+                        <div><Contador terminaEm={l.comecaEm} /></div>
+                      </>
+                    )}
+                    {l.estado === 'ativo' && (
+                      <>
+                        <span className="ponto ponto-direto" />
+                        <Contador terminaEm={l.terminaEm} />
+                      </>
+                    )}
+                    {l.estado === 'terminado' && <span className="etiqueta estado-entregue">terminado</span>}
                     <div className="small text-black-50">{dataPt(l.terminaEm)}</div>
                   </td>
                   <td className="text-end">

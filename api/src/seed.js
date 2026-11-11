@@ -28,6 +28,7 @@ const Review = require('./models/Review');
 const DIA = 24 * 60 * 60 * 1000;
 const haDias = (n) => new Date(Date.now() - n * DIA);
 const daquiA = (n) => new Date(Date.now() + n * DIA);
+const daquiAMinutos = (n) => new Date(Date.now() + n * 60 * 1000);
 
 /**
  * Grava documentos com uma data de criação escolhida por nós.
@@ -305,7 +306,9 @@ async function seed() {
   }
 
   // ========================= LEILÕES =========================
-  // Os ativos duram vários dias, para não ser preciso repor os dados.
+  // Os ativos duram vários dias, para não ser preciso repor os dados. Há ainda
+  // um agendado, que abre sozinho daqui a poucos minutos — serve para mostrar
+  // na demonstração a sala a abrir em direto.
 
   const [kiwi, mel, alvarinho, batata, queijo] = await inserir(Auction, [
     {
@@ -314,7 +317,7 @@ async function seed() {
       imagem: criarImagem('Lote de Kiwi', 'Fruta'),
       precoBase: 60, incremento: 5,
       licitacaoAtual: { valor: 75, comprador: carla._id, nome: carla.nome },
-      terminaEm: daquiA(3), estado: 'ativo', data: haDias(1),
+      comecaEm: haDias(1), terminaEm: daquiA(3), estado: 'ativo', data: haDias(1),
     },
     {
       produtor: apiario._id, lote: 'Lote de 30 frascos de Mel de Urze',
@@ -322,7 +325,7 @@ async function seed() {
       imagem: criarImagem('Lote de Mel', 'Mel'),
       precoBase: 150, incremento: 10,
       licitacaoAtual: { valor: 180, comprador: lagar._id, nome: lagar.nome },
-      terminaEm: daquiA(5), estado: 'ativo', data: haDias(2),
+      comecaEm: haDias(2), terminaEm: daquiA(5), estado: 'ativo', data: haDias(2),
     },
     {
       produtor: adega._id, lote: 'Lote de 12 garrafas de Alvarinho Reserva',
@@ -330,7 +333,7 @@ async function seed() {
       imagem: criarImagem('Lote de Alvarinho', 'Vinho'),
       precoBase: 120, incremento: 10,
       licitacaoAtual: { valor: 120, comprador: null, nome: '' },
-      terminaEm: daquiA(6), estado: 'ativo', data: haDias(0),
+      comecaEm: haDias(0), terminaEm: daquiA(6), estado: 'ativo', data: haDias(0),
     },
     {
       produtor: horta._id, lote: 'Lote de 80 kg de Batata de Trás-os-Montes',
@@ -338,7 +341,7 @@ async function seed() {
       imagem: criarImagem('Lote de Batata', 'Hortícolas'),
       precoBase: 70, incremento: 5,
       licitacaoAtual: { valor: 110, comprador: lagar._id, nome: lagar.nome },
-      terminaEm: haDias(4), estado: 'terminado', data: haDias(9),
+      comecaEm: haDias(9), terminaEm: haDias(4), estado: 'terminado', data: haDias(9),
     },
     {
       produtor: queijaria._id, lote: 'Lote de 20 queijos de cabra curados',
@@ -346,7 +349,16 @@ async function seed() {
       imagem: criarImagem('Lote de Queijo', 'Queijo'),
       precoBase: 200, incremento: 10,
       licitacaoAtual: { valor: 260, comprador: carla._id, nome: carla.nome },
-      terminaEm: haDias(9), estado: 'terminado', data: haDias(16),
+      comecaEm: haDias(16), terminaEm: haDias(9), estado: 'terminado', data: haDias(16),
+    },
+    {
+      produtor: horta._id, lote: 'Lote de 40 kg de Cebola Roxa',
+      descricao: 'Excedente da apanha desta semana. Abre daqui a poucos minutos.',
+      imagem: criarImagem('Lote de Cebola', 'Hortícolas'),
+      precoBase: 40, incremento: 5,
+      licitacaoAtual: { valor: 40, comprador: null, nome: '' },
+      comecaEm: daquiAMinutos(6), terminaEm: daquiAMinutos(6 + 60),
+      estado: 'agendado', data: haDias(0),
     },
   ]);
 

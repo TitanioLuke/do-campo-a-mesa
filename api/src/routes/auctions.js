@@ -5,9 +5,16 @@ const autenticar = require('../middleware/auth');
 
 const router = express.Router();
 
+// Quanto tempo pode faltar para um leilão abrir: nem já, para dar tempo aos
+// compradores de entrarem na sala, nem daqui a muito, para o leilão não cair
+// no esquecimento.
+const MINUTOS_ATE_COMECAR_MIN = 3;
+const MINUTOS_ATE_COMECAR_MAX = 60;
+
 /**
  * GET /api/auctions — lista de leilões.
- * Query: estado (ativo|terminado), produtor, aTerminar=true (termina na próxima hora, usa $lt)
+ * Query: estado (agendado|ativo|terminado), produtor,
+ *        aTerminar=true (termina na próxima hora, usa $lt)
  */
 router.get('/', async (req, res) => {
   const { estado, produtor, aTerminar } = req.query;
@@ -43,18 +50,34 @@ router.get('/:id/bids', async (req, res) => {
 
 /**
  * POST /api/auctions — o produtor cria um leilão.
+ *
+ * O leilão nasce AGENDADO: abre daqui a `minutosAteComecar` (entre 3 e 60) e
+ * dura `duracaoMinutos` a partir daí. É o servidor que o abre e o fecha na hora
+ * certa, por isso as datas não vêm do relógio do cliente.
+ *
  * `licitacaoAtual.valor` começa no preço base: a 1.ª licitação válida é
  * precoBase + incremento.
  */
 router.post('/', autenticar('produtor'), async (req, res) => {
-  const { lote, descricao, imagem, precoBase, incremento, duracaoMinutos } = req.body;
+  const { lote, descricao, imagem, precoBase, incremento, duracaoMinutos, minutosAteComecar } = req.body;
 
-  if (!lote || precoBase === undefined || !duracaoMinutos) {
-    return res.status(400).json({ erro: 'Lote, preço base e duração são obrigatórios' });
+  if (!lote || precoBase === undefined || !duracaoMinutos || !minutosAteComecar) {
+    return res.status(400).json({
+      erro: 'Lote, preço base, tempo até começar e duração são obrigatórios',
+    });
+  }
+
+  const ateComecar = Number(minutosAteComecar);
+  if (ateComecar < MINUTOS_ATE_COMECAR_MIN || ateComecar > MINUTOS_ATE_COMECAR_MAX) {
+    return res.status(400).json({
+      erro: `O leilão tem de começar daqui a ${MINUTOS_ATE_COMECAR_MIN} a ${MINUTOS_ATE_COMECAR_MAX} minutos`,
+    });
   }
   if (Number(duracaoMinutos) < 1) {
     return res.status(400).json({ erro: 'A duração tem de ser de pelo menos 1 minuto' });
   }
+
+  const comecaEm = new Date(Date.now() + ateComecar * 60 * 1000);
 
   const leilao = await Auction.create({
     produtor: req.user.id,
@@ -64,9 +87,13 @@ router.post('/', autenticar('produtor'), async (req, res) => {
     precoBase: Number(precoBase),
     incremento: Number(incremento) || 5,
     licitacaoAtual: { valor: Number(precoBase), comprador: null, nome: '' },
-    terminaEm: new Date(Date.now() + Number(duracaoMinutos) * 60 * 1000),
-    estado: 'ativo',
+    comecaEm,
+    terminaEm: new Date(comecaEm.getTime() + Number(duracaoMinutos) * 60 * 1000),
+    estado: 'agendado',
   });
+
+  // Quem estiver na aplicação vê o leilão novo aparecer na lista
+  req.app.get('io').to('leiloes').emit('leiloes-mudaram');
 
   res.status(201).location(`/api/auctions/${leilao._id}`).json(leilao);
 });
@@ -80,6 +107,7 @@ router.delete('/:id', autenticar('produtor', 'admin'), async (req, res) => {
   if (!resultado.deletedCount) return res.status(404).json({ erro: 'Leilão não encontrado' });
 
   await Bid.deleteMany({ leilao: req.params.id });
+  req.app.get('io').to('leiloes').emit('leiloes-mudaram');
   res.status(204).end();
 });
 

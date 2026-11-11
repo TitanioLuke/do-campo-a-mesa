@@ -29,6 +29,7 @@ export function useLeilao(id) {
     const aoPresenca = (n) => setParticipantes(n);
     const aoRecusada = (mensagem) => setErro(mensagem);
     const aoTerminado = (dados) => setLeilao(dados);
+    const aoComecar = (dados) => setLeilao(dados); // o servidor abriu o leilão
 
     socket.on('estado', aoEstado);
     socket.on('historico', aoHistorico);
@@ -36,6 +37,7 @@ export function useLeilao(id) {
     socket.on('presenca', aoPresenca);
     socket.on('recusada', aoRecusada);
     socket.on('leilao-terminado', aoTerminado);
+    socket.on('leilao-comecou', aoComecar);
 
     // Ao sair da página: deixar a sala e remover os ouvintes
     return () => {
@@ -46,6 +48,7 @@ export function useLeilao(id) {
       socket.off('presenca', aoPresenca);
       socket.off('recusada', aoRecusada);
       socket.off('leilao-terminado', aoTerminado);
+      socket.off('leilao-comecou', aoComecar);
     };
   }, [socket, id]);
 
