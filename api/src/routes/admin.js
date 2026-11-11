@@ -11,17 +11,27 @@ const router = express.Router();
 // Todas as rotas deste ficheiro exigem o papel 'admin'
 router.use(autenticar('admin'));
 
-/** GET /api/admin/estatisticas — painel global. */
+/**
+ * GET /api/admin/estatisticas — painel global.
+ *
+ * O total de encomendas e o volume de negócios saem de uma AGREGAÇÃO, não de
+ * `Order.find()` seguido de um `reduce`. A diferença não se nota com dezenas de
+ * encomendas, mas trazer a coleção toda para memória só para somar uma coluna
+ * deixa de funcionar quando ela cresce. Assim a soma é feita pelo MongoDB e só
+ * viaja o resultado.
+ */
 router.get('/estatisticas', async (req, res) => {
-  const encomendas = await Order.find();
+  const [encomendas] = await Order.aggregate([
+    { $group: { _id: null, quantas: { $sum: 1 }, volume: { $sum: '$total' } } },
+  ]);
 
   res.json({
     compradores: await User.countDocuments({ papel: 'comprador' }),
     produtores: await User.countDocuments({ papel: 'produtor', aprovado: 'aprovado' }),
     produtoresPendentes: await User.countDocuments({ papel: 'produtor', aprovado: 'pendente' }),
     produtos: await Product.countDocuments(),
-    encomendas: encomendas.length,
-    volumeNegocios: Number(encomendas.reduce((soma, e) => soma + e.total, 0).toFixed(2)),
+    encomendas: encomendas?.quantas ?? 0,
+    volumeNegocios: Number((encomendas?.volume ?? 0).toFixed(2)),
     leiloesAtivos: await Auction.countDocuments({ estado: 'ativo' }),
     avaliacoesDenunciadas: await Review.countDocuments({ denunciada: true, oculta: false }),
   });

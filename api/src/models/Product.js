@@ -33,4 +33,17 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+/**
+ * Índice composto para a consulta mais usada da aplicação: o catálogo filtrado
+ * por categoria e por preço.
+ *
+ * A ordem dos campos não é arbitrária — segue a regra ESR: primeiro o campo
+ * comparado por IGUALDADE (`categoria`), depois o usado em INTERVALO e para
+ * ORDENAR (`preco`). Com esta ordem, o MongoDB percorre só o troço do índice
+ * que interessa; ao contrário, teria de ler o índice todo.
+ *
+ * Os índices de chave estrangeira (`produtor`) estão declarados campo a campo.
+ */
+productSchema.index({ categoria: 1, preco: 1 });
+
 module.exports = mongoose.model('Product', productSchema);

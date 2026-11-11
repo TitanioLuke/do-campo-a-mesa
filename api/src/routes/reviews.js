@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Review = require('../models/Review');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
@@ -13,11 +14,14 @@ const router = express.Router();
 async function atualizarMedia(produtoId) {
   if (!produtoId) return;
 
-  const avaliacoes = await Review.find({ produto: produtoId, oculta: false });
-  const soma = avaliacoes.reduce((total, a) => total + a.nota, 0);
+  const [resumo] = await Review.aggregate([
+    { $match: { produto: new mongoose.Types.ObjectId(produtoId), oculta: false } },
+    { $group: { _id: null, quantas: { $sum: 1 }, media: { $avg: '$nota' } } },
+  ]);
+
   await Product.findByIdAndUpdate(produtoId, {
-    notaMedia: avaliacoes.length ? Number((soma / avaliacoes.length).toFixed(1)) : 0,
-    numAvaliacoes: avaliacoes.length,
+    notaMedia: resumo ? Number(resumo.media.toFixed(1)) : 0,
+    numAvaliacoes: resumo?.quantas ?? 0,
   });
 }
 

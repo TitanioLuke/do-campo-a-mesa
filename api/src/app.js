@@ -1,11 +1,28 @@
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const origensPermitidas = require('./origens');
 
 const app = express();
+
+/**
+ * Cabeçalhos HTTP de segurança (X-Content-Type-Options, Referrer-Policy,
+ * HSTS em HTTPS, etc.). Duas exceções, ambas por razões concretas:
+ *
+ *  - `contentSecurityPolicy: false` porque o Swagger UI usa estilos e scripts
+ *    inline que uma CSP restritiva bloquearia. O resto da API devolve JSON,
+ *    onde a CSP não tem efeito prático.
+ *  - `crossOriginResourcePolicy: 'cross-origin'` porque a SPA corre noutra
+ *    origem e precisa de carregar as imagens servidas em /uploads. Com o valor
+ *    por omissão (`same-origin`) o browser bloqueava-as.
+ */
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 
 app.use(cors({ origin: origensPermitidas() }));
 app.use(express.json());

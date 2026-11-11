@@ -499,6 +499,63 @@ estrangeiras mais consultadas.
 
 O `passwordHash` nunca sai da API: o método `toJSON` do `User` apaga-o de todas as respostas.
 
+### 11.1. As contas são feitas pelo MongoDB, não em JavaScript
+
+Os painéis mostram totais — volume de negócios, vendas entregues, média das avaliações.
+A primeira versão trazia os documentos todos para memória e somava-os com `reduce`:
+
+```js
+const encomendas = await Order.find();                       // TODAS as encomendas
+volumeNegocios: encomendas.reduce((s, e) => s + e.total, 0)
+```
+
+Com 16 encomendas ninguém nota. Com 100 000, a API tenta carregar a coleção inteira para
+responder a um número. A conta passou a ser feita onde os dados estão:
+
+```js
+const [encomendas] = await Order.aggregate([
+  { $group: { _id: null, quantas: { $sum: 1 }, volume: { $sum: '$total' } } },
+]);
+```
+
+Nos indicadores do produtor, uma única passagem conta as encomendas, conta as pendentes e
+soma as entregues, usando `$cond` para decidir o que entra em cada conta:
+
+```js
+{ $group: {
+    _id: null,
+    total: { $sum: 1 },
+    pendentes: { $sum: { $cond: [{ $eq: ['$estado', 'pendente'] }, 1, 0] } },
+    vendas:    { $sum: { $cond: [{ $eq: ['$estado', 'entregue'] }, '$total', 0] } },
+} }
+```
+
+A média das avaliações usa `$avg`, em vez de somar notas à mão.
+
+### 11.2. Índices, e a prova de que servem para alguma coisa
+
+Além dos índices nas chaves estrangeiras, há um **índice composto** para a consulta mais
+usada da aplicação — o catálogo filtrado por categoria e preço:
+
+```js
+productSchema.index({ categoria: 1, preco: 1 });
+```
+
+A ordem dos campos segue a regra **ESR**: primeiro o campo comparado por *igualdade*
+(`categoria`), depois o usado em *intervalo* e para *ordenar* (`preco`).
+
+Medido com `.explain('executionStats')` sobre `categoria = "Mel" e preco <= 8`, numa
+coleção de 28 produtos:
+
+| | Documentos lidos | Devolvidos |
+| --- | --- | --- |
+| Sem índice (`COLLSCAN`) | **28** | 2 |
+| Com índice (`IXSCAN`) | **2** | 2 |
+
+Sem índice o MongoDB lê a coleção toda e deita fora 26 documentos; com ele lê exatamente
+os dois que interessam. A proporção 1:1 entre chaves examinadas e documentos devolvidos é
+o sinal de que o índice cobre a consulta.
+
 ---
 
 ## 12. Documentação Swagger
@@ -567,6 +624,16 @@ da resposta e colá-lo no botão **Authorize**.
 - **Upload de imagens restrito** — só `image/jpeg`, `png`, `webp` e `gif`, no máximo 3 MB,
   com nome de ficheiro gerado pelo servidor (nunca o nome original do utilizador).
 - **HTTPS em produção** — fica a cargo da plataforma PaaS, que termina o TLS (ver secção 15).
+- **Cabeçalhos de segurança** — `helmet` acrescenta `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy`, `X-Frame-Options`, HSTS e outros. Duas exceções deliberadas: a CSP
+  fica desligada porque o Swagger UI usa estilos e scripts inline, e a
+  `Cross-Origin-Resource-Policy` é `cross-origin` porque a SPA corre noutra origem e
+  precisa de carregar as imagens de `/uploads`.
+- **Limite de tentativas no login** — `express-rate-limit`, 10 tentativas **falhadas** por
+  IP em cada 15 minutos. O bcrypt torna cada tentativa lenta, mas é o atacante que decide
+  quantas faz; este limite é que lhe corta o ritmo. Só as falhadas contam
+  (`skipSuccessfulRequests`), por isso quem sabe a password nunca é incomodado — medido:
+  15 entradas corretas seguidas passam todas, 10 erradas esgotam a quota.
 
 ---
 

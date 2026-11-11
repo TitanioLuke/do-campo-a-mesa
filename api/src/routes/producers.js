@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
@@ -23,24 +24,38 @@ router.get('/', async (req, res) => {
  * Tem de vir antes de /:id para não ser apanhada como um id.
  */
 router.get('/me/estatisticas', autenticar('produtor'), async (req, res) => {
-  const encomendas = await Order.find({ produtor: req.user.id });
-  const entregues = encomendas.filter((e) => e.estado === 'entregue');
+  const produtor = new mongoose.Types.ObjectId(req.user.id);
 
-  const avaliacoes = await Review.find({ produtor: req.user.id, oculta: false });
-  const notaMedia = avaliacoes.length
-    ? avaliacoes.reduce((soma, a) => soma + a.nota, 0) / avaliacoes.length
-    : 0;
+  // Uma única passagem pelas encomendas deste produtor: conta todas, conta as
+  // pendentes e soma as entregues, com $cond a escolher o que entra em cada conta.
+  const [encomendas] = await Order.aggregate([
+    { $match: { produtor } },
+    {
+      $group: {
+        _id: null,
+        total: { $sum: 1 },
+        pendentes: { $sum: { $cond: [{ $eq: ['$estado', 'pendente'] }, 1, 0] } },
+        vendas: { $sum: { $cond: [{ $eq: ['$estado', 'entregue'] }, '$total', 0] } },
+      },
+    },
+  ]);
+
+  // A média das avaliações é feita pelo MongoDB com $avg
+  const [avaliacoes] = await Review.aggregate([
+    { $match: { produtor, oculta: false } },
+    { $group: { _id: null, quantas: { $sum: 1 }, media: { $avg: '$nota' } } },
+  ]);
 
   // Alertas de stock baixo: produtos com menos de 5 unidades ($lt)
-  const stockBaixo = await Product.find({ produtor: req.user.id, stock: { $lt: 5 } }).select('nome stock unidade');
+  const stockBaixo = await Product.find({ produtor, stock: { $lt: 5 } }).select('nome stock unidade');
 
   res.json({
-    totalProdutos: await Product.countDocuments({ produtor: req.user.id }),
-    totalEncomendas: encomendas.length,
-    encomendasPendentes: encomendas.filter((e) => e.estado === 'pendente').length,
-    vendasTotais: entregues.reduce((soma, e) => soma + e.total, 0),
-    notaMedia: Number(notaMedia.toFixed(1)),
-    numAvaliacoes: avaliacoes.length,
+    totalProdutos: await Product.countDocuments({ produtor }),
+    totalEncomendas: encomendas?.total ?? 0,
+    encomendasPendentes: encomendas?.pendentes ?? 0,
+    vendasTotais: Number((encomendas?.vendas ?? 0).toFixed(2)),
+    notaMedia: avaliacoes ? Number(avaliacoes.media.toFixed(1)) : 0,
+    numAvaliacoes: avaliacoes?.quantas ?? 0,
     stockBaixo,
   });
 });
