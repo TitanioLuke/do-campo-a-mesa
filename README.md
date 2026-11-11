@@ -465,16 +465,33 @@ em `400`).
 **Pesquisas com operadores do MongoDB** (`GET /api/products`):
 
 ```js
-if (q) filtro.$or = [                                 // $regex, sem distinguir maiúsculas
-  { nome: { $regex: q, $options: 'i' } },
-  { descricao: { $regex: q, $options: 'i' } },
-];
+if (q) filtro.procura = { $regex: escaparRegex(normalizar(q)) };   // $regex
 if (precoMin || precoMax) {                           // intervalo com $gte / $lte
   filtro.preco = {};
   if (precoMin) filtro.preco.$gte = Number(precoMin);
   if (precoMax) filtro.preco.$lte = Number(precoMax);
 }
 ```
+
+Aquela primeira linha tem duas decisões atrás dela, e ambas vieram de defeitos
+encontrados a testar:
+
+**O campo `procura`.** Os produtos guardam o nome e a descrição numa terceira cópia, em
+minúsculas e sem acentos, mantida por um hook do schema. A pesquisa normaliza o termo da
+mesma maneira e procura aí. Numa aplicação portuguesa isto não é detalhe: metade dos
+nomes leva acento e quase ninguém os escreve no telemóvel — antes disto, procurar
+**"maca" não encontrava "Maçã Bravo de Esmolfe"**.
+
+O hook é `pre('validate')` e não `pre('save')` de propósito, porque o `insertMany` do seed
+valida os documentos mas não dispara os hooks de gravação. E o `PUT` de um produto passou
+a ler-alterar-gravar em vez de um `findOneAndUpdate` direto, senão o campo ficava preso ao
+nome antigo.
+
+**O escape.** O que o utilizador escreve é texto, não um padrão. Sem escapar, escrever
+`(` na caixa de pesquisa produzia uma expressão regular inválida e **a API respondia 500**;
+`.*` devolvia o catálogo inteiro; e um padrão como `a{1,99999}` podia pôr o servidor a
+trabalhar à toa. Hoje qualquer um destes devolve 200 com zero resultados, que é o que um
+utilizador espera de uma pesquisa por um parêntese.
 
 E `$lt` sobre datas em `GET /api/auctions?aTerminar=true` (leilões que terminam na próxima hora)
 e `$lt` sobre números nos alertas de stock baixo do produtor (`stock: { $lt: 5 }`).

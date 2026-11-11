@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { normalizar } = require('../texto');
 
 /**
  * Coleção `products`.
@@ -25,6 +26,10 @@ const productSchema = new mongoose.Schema(
       default: 'Todo o ano',
     },
     imagem: { type: String, default: '' },
+
+    // Nome e descrição em minúsculas e sem acentos, para a pesquisa.
+    // É mantido pelo hook abaixo — nunca é escrito à mão nem vem do cliente.
+    procura: { type: String, default: '', index: true },
     // Média das avaliações, recalculada quando é criada uma avaliação.
     // Guardada aqui (desnormalização) para não ter de somar avaliações em cada listagem.
     notaMedia: { type: Number, default: 0 },
@@ -32,6 +37,17 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+/**
+ * Mantém o campo `procura` sincronizado com o nome e a descrição.
+ *
+ * `validate` e não `save`, porque o `insertMany` do seed valida os documentos
+ * mas não dispara os hooks de gravação. Assim, os dados de demonstração também
+ * ficam pesquisáveis sem acentos.
+ */
+productSchema.pre('validate', function definirProcura() {
+  this.procura = normalizar(`${this.nome || ''} ${this.descricao || ''}`);
+});
 
 /**
  * Índice composto para a consulta mais usada da aplicação: o catálogo filtrado

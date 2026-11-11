@@ -5,6 +5,7 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const Review = require('../models/Review');
 const autenticar = require('../middleware/auth');
+const { escaparRegex } = require('../texto');
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   const { q, localidade } = req.query;
   const filtro = { papel: 'produtor', aprovado: 'aprovado' };
-  if (q) filtro.nome = { $regex: q, $options: 'i' };
+  if (q) filtro.nome = { $regex: escaparRegex(q), $options: 'i' };
   if (localidade) filtro.localidade = localidade; // exata: vem da lista de concelhos
 
   const produtores = await User.find(filtro).sort({ nome: 1 });

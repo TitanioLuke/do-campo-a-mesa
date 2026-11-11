@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const Review = require('../models/Review');
 const autenticar = require('../middleware/auth');
+const { normalizar, escaparRegex } = require('../texto');
 
 const router = express.Router();
 
@@ -15,12 +16,11 @@ router.get('/', async (req, res) => {
   const { q, categoria, precoMin, precoMax, bio, epoca, produtor, localidade, ordenar } = req.query;
   const filtro = {};
 
-  // Pesquisa por nome OU descrição, sem distinguir maiúsculas ($options: 'i')
+  // Pesquisa sobre o campo `procura`, que já está em minúsculas e sem acentos.
+  // O termo é normalizado da mesma maneira e escapado, porque o que o
+  // utilizador escreve é texto e não um padrão de expressão regular.
   if (q) {
-    filtro.$or = [
-      { nome: { $regex: q, $options: 'i' } },
-      { descricao: { $regex: q, $options: 'i' } },
-    ];
+    filtro.procura = { $regex: escaparRegex(normalizar(q)) };
   }
   if (categoria && categoria !== 'Todas') filtro.categoria = categoria;
   if (epoca && epoca !== 'Todas') filtro.epoca = epoca;
@@ -81,16 +81,23 @@ router.post('/', autenticar('produtor'), async (req, res) => {
   res.status(201).location(`/api/products/${produto._id}`).json(produto); // 201 Created
 });
 
-/** PUT /api/products/:id — só o dono do produto pode alterar. */
+/**
+ * PUT /api/products/:id — só o dono do produto pode alterar.
+ *
+ * Lê, altera e grava, em vez de um `findOneAndUpdate` direto: o `save()`
+ * dispara o hook do schema que recalcula o campo `procura`, que depende do
+ * nome e da descrição. Com uma atualização direta esse campo ficaria preso ao
+ * valor antigo e a pesquisa deixava de encontrar o produto pelo nome novo.
+ */
 router.put('/:id', autenticar('produtor'), async (req, res) => {
-  const { produtor, notaMedia, numAvaliacoes, ...alteracoes } = req.body; // campos não editáveis
+  const { produtor, notaMedia, numAvaliacoes, procura, ...alteracoes } = req.body;
 
-  const produto = await Product.findOneAndUpdate(
-    { _id: req.params.id, produtor: req.user.id }, // o filtro garante que é o dono
-    alteracoes,
-    { new: true, runValidators: true }
-  );
+  // o filtro garante que é o dono
+  const produto = await Product.findOne({ _id: req.params.id, produtor: req.user.id });
   if (!produto) return res.status(404).json({ erro: 'Produto não encontrado' });
+
+  Object.assign(produto, alteracoes);
+  await produto.save();
   res.json(produto);
 });
 
