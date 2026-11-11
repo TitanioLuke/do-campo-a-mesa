@@ -1,0 +1,26 @@
+# Configuração do serviço no Render (https://render.com).
+#
+# O Render também se configura pela interface; este ficheiro serve para a
+# configuração ficar no repositório, versionada com o resto do código.
+#
+# Os segredos (MONGODB_URI, JWT_SECRET) NÃO vão aqui: ficam marcados com
+# sync: false e são preenchidos à mão no painel do Render.
+services:
+  - type: web
+    name: do-campo-a-mesa-api
+    runtime: node
+    region: frankfurt
+    plan: free
+    rootDir: api
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRA
+        value: 8h
+      - key: CORS_ORIGIN
+        sync: false
