@@ -18,11 +18,13 @@ export function useListaLeiloes(parametros = '') {
   const { socket } = useSocket();
   const [leiloes, setLeiloes] = useState([]);
   const [aCarregar, setACarregar] = useState(true);
+  const [falhou, setFalhou] = useState(false);
 
   const carregar = useCallback(() => {
+    setACarregar(true);
     api.get(`/auctions${parametros}`)
-      .then(setLeiloes)
-      .catch(() => {})
+      .then((lista) => { setLeiloes(lista); setFalhou(false); })
+      .catch(() => setFalhou(true))
       .finally(() => setACarregar(false));
   }, [parametros]);
 
@@ -45,5 +47,5 @@ export function useListaLeiloes(parametros = '') {
     };
   }, [socket, carregar]);
 
-  return { leiloes, aCarregar, recarregar: carregar };
+  return { leiloes, aCarregar, falhou, recarregar: carregar };
 }

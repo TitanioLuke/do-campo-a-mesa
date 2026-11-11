@@ -8,15 +8,28 @@ function token() {
   return localStorage.getItem('token');
 }
 
+/**
+  * O `fetch` só rejeita quando o pedido nem chega ao servidor: sem rede, servidor
+  * em baixo, ou ainda a arrancar. A mensagem do browser nesse caso é
+  * "Failed to fetch", em inglês e sem explicar nada — por isso é traduzida aqui,
+  * num sítio só, em vez de em cada página.
+  */
+const ERRO_DE_REDE = 'Não foi possível contactar o servidor. Verifique a ligação e tente outra vez.';
+
 async function pedido(metodo, caminho, corpo) {
-  const resposta = await fetch(`${API_URL}/api${caminho}`, {
-    method: metodo,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token() ? { Authorization: `Bearer ${token()}` } : {}),
-    },
-    body: corpo ? JSON.stringify(corpo) : undefined,
-  });
+  let resposta;
+  try {
+    resposta = await fetch(`${API_URL}/api${caminho}`, {
+      method: metodo,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token() ? { Authorization: `Bearer ${token()}` } : {}),
+      },
+      body: corpo ? JSON.stringify(corpo) : undefined,
+    });
+  } catch {
+    throw new Error(ERRO_DE_REDE);
+  }
 
   if (resposta.status === 204) return null; // No Content
 
@@ -37,11 +50,16 @@ export const api = {
     const dados = new FormData();
     dados.append('imagem', ficheiro);
 
-    const resposta = await fetch(`${API_URL}/api/uploads`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token()}` },
-      body: dados,
-    });
+    let resposta;
+    try {
+      resposta = await fetch(`${API_URL}/api/uploads`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token()}` },
+        body: dados,
+      });
+    } catch {
+      throw new Error(ERRO_DE_REDE);
+    }
     const json = await resposta.json();
     if (!resposta.ok) throw new Error(json.erro || 'Falha no upload');
     return json.url;

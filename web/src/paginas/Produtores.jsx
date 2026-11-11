@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../servicos/api';
 import SelectLocalidade from '../componentes/SelectLocalidade';
+import FalhaAoCarregar from '../componentes/FalhaAoCarregar';
 
 export default function Produtores() {
   const [produtores, setProdutores] = useState([]);
   const [filtro, setFiltro] = useState({ q: '', localidade: '' });
   const [aCarregar, setACarregar] = useState(true);
+  const [falhou, setFalhou] = useState(false);
+  const [tentativa, setTentativa] = useState(0);
 
   useEffect(() => {
     setACarregar(true);
@@ -16,13 +19,13 @@ export default function Produtores() {
       if (filtro.localidade) parametros.set('localidade', filtro.localidade);
 
       api.get(`/producers?${parametros}`)
-        .then(setProdutores)
-        .catch(() => {})
+        .then((lista) => { setProdutores(lista); setFalhou(false); })
+        .catch(() => setFalhou(true))
         .finally(() => setACarregar(false));
     }, 300);
 
     return () => clearTimeout(temporizador);
-  }, [filtro]);
+  }, [filtro, tentativa]);
 
   return (
     <>
@@ -68,7 +71,11 @@ export default function Produtores() {
         ))}
       </div>
 
-      {!aCarregar && produtores.length === 0 && (
+      {!aCarregar && falhou && (
+        <FalhaAoCarregar oQue="os produtores" aoTentar={() => setTentativa((t) => t + 1)} />
+      )}
+
+      {!aCarregar && !falhou && produtores.length === 0 && (
         <div className="painel text-center py-5">
           {filtro.localidade ? (
             <>

@@ -389,6 +389,13 @@ Três coisas que valem por toda a aplicação:
 - **Rodapé colado ao fundo**, com `#root` em `flex-column` e o conteúdo a crescer
   (`flex: 1 0 auto`). Nas páginas curtas o rodapé fica no fundo do ecrã em vez de deixar
   uma faixa branca por baixo.
+- **"Não há resultados" e "não foi possível carregar" são estados diferentes.** Quando o
+  servidor não responde, o catálogo mostra *"Não foi possível carregar o catálogo"* com um
+  botão de repetir, e não *"nenhum produto corresponde aos filtros"* — que seria mentira.
+  A distinção não é teórica: num alojamento gratuito o servidor adormece e demora perto de
+  um minuto a acordar, e nesse intervalo um visitante veria uma loja aparentemente vazia.
+  Pela mesma razão, o `fetch` que falha por falta de rede dá uma mensagem em português,
+  traduzida num sítio só (`servicos/api.js`), em vez do `Failed to fetch` do browser.
 
 ### 9.2. A lista de concelhos
 

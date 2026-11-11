@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useListaLeiloes } from '../hooks/useListaLeiloes';
 import CartaoLeilao from '../componentes/CartaoLeilao';
+import FalhaAoCarregar from '../componentes/FalhaAoCarregar';
 
 const SEPARADORES = [
   ['ativo', 'Em direto'],
@@ -17,7 +18,7 @@ const VAZIO = {
 export default function Leiloes() {
   const [estado, setEstado] = useState('ativo');
   // A lista mantém-se sozinha: as licitações dos outros aparecem aqui em direto
-  const { leiloes, aCarregar } = useListaLeiloes(`?estado=${estado}`);
+  const { leiloes, aCarregar, falhou, recarregar } = useListaLeiloes(`?estado=${estado}`);
 
   return (
     <>
@@ -37,7 +38,9 @@ export default function Leiloes() {
 
       {aCarregar && <p className="text-center py-4 text-black-50">A carregar leilões…</p>}
 
-      {!aCarregar && leiloes.length === 0 ? (
+      {!aCarregar && falhou && <FalhaAoCarregar oQue="os leilões" aoTentar={recarregar} />}
+
+      {!aCarregar && !falhou && leiloes.length === 0 ? (
         <div className="painel text-center py-5">
           <p className="h5 mb-0">{VAZIO[estado]}</p>
         </div>

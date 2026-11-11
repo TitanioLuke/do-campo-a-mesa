@@ -8,6 +8,7 @@ import { useListaLeiloes } from '../hooks/useListaLeiloes';
 import CartaoProduto from '../componentes/CartaoProduto';
 import CartaoLeilao from '../componentes/CartaoLeilao';
 import FiltrosCatalogo from '../componentes/FiltrosCatalogo';
+import FalhaAoCarregar from '../componentes/FalhaAoCarregar';
 
 const FILTRO_INICIAL = {
   q: '', categoria: 'Todas', epoca: 'Todas', produtor: '', localidade: '', precoMax: '', bio: false, ordenar: 'recentes',
@@ -18,6 +19,8 @@ export default function Catalogo() {
   const [produtores, setProdutores] = useState([]);
   const [filtro, setFiltro] = useState(FILTRO_INICIAL);
   const [aCarregar, setACarregar] = useState(true);
+  const [falhou, setFalhou] = useState(false);
+  const [tentativa, setTentativa] = useState(0);
 
   const { adicionar } = useCarrinho();
   const { papel } = useAuth();
@@ -25,12 +28,13 @@ export default function Catalogo() {
 
   // Leilões em destaque, em tempo real: as licitações dos outros compradores
   // aparecem aqui sem ser preciso recarregar a página.
-  const { leiloes } = useListaLeiloes('?estado=ativo');
+  const { leiloes, recarregar: recarregarLeiloes } = useListaLeiloes('?estado=ativo');
 
-  // Lista de produtores para o filtro (só ao abrir a página)
+  // Lista de produtores para o filtro. Depende da tentativa para o botão de
+  // "tentar outra vez" repetir também este pedido, e não só o do catálogo.
   useEffect(() => {
     api.get('/producers').then(setProdutores).catch(() => {});
-  }, []);
+  }, [tentativa]);
 
   // Sempre que um filtro muda, volta a pedir os produtos à API.
   // O setTimeout evita um pedido por cada tecla escrita na pesquisa.
@@ -48,13 +52,13 @@ export default function Catalogo() {
       parametros.set('ordenar', filtro.ordenar);
 
       api.get(`/products?${parametros}`)
-        .then(setProdutos)
-        .catch((e) => erro(e.message))
+        .then((lista) => { setProdutos(lista); setFalhou(false); })
+        .catch((e) => { setFalhou(true); erro(e.message); })
         .finally(() => setACarregar(false));
     }, 300);
 
     return () => clearTimeout(temporizador);
-  }, [filtro, erro]);
+  }, [filtro, tentativa, erro]);
 
   const podeComprar = papel === 'comprador' || papel === 'visitante';
 
@@ -91,7 +95,14 @@ export default function Catalogo() {
 
       {aCarregar && <p className="text-center py-4 text-black-50">A carregar produtos…</p>}
 
-      {!aCarregar && produtos.length === 0 && (
+      {!aCarregar && falhou && (
+        <FalhaAoCarregar
+          oQue="o catálogo"
+          aoTentar={() => { setTentativa((t) => t + 1); recarregarLeiloes(); }}
+        />
+      )}
+
+      {!aCarregar && !falhou && produtos.length === 0 && (
         <div className="painel text-center py-5">
           {filtro.localidade ? (
             <>

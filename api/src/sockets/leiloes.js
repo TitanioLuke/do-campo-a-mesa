@@ -98,7 +98,16 @@ module.exports = function configurarSockets(io) {
       );
 
       if (!leilao) {
-        return socket.emit('recusada', 'Licitação recusada: valor demasiado baixo ou leilão fechado');
+        // A decisão já foi tomada (atomicamente) e foi "não". Só agora, no
+        // caminho da recusa, é que vale a pena ler o leilão outra vez — para
+        // dizer a quem licitou PORQUE é que foi recusada.
+        const atual = await Auction.findById(leilaoId);
+        if (!atual) return socket.emit('recusada', 'Leilão não encontrado');
+        if (atual.estado === 'agendado') return socket.emit('recusada', 'O leilão ainda não abriu');
+        if (atual.estado === 'terminado') return socket.emit('recusada', 'O leilão já terminou');
+
+        const minimo = atual.licitacaoAtual.valor + atual.incremento;
+        return socket.emit('recusada', `Licitação recusada: o mínimo é ${minimo} €`);
       }
 
       // Guardar no histórico e avisar toda a sala
