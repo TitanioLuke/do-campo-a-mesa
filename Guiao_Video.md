@@ -82,7 +82,7 @@ Na **segunda janela** (anónima), entrar como **quinta@dcm.pt** → Painel → E
 1. Ir a **Leilões → Por começar** → mostrar a contagem decrescente
 2. Entrar na sala → *"Este leilão ainda não abriu"*
 
-> "Quem cria o leilão escolhe daqui a quanto tempo abre, entre 3 e 60 minutos. É o
+> "Quem cria o leilão escolhe a que horas abre, à hora e ao minuto, entre as 8 e as 18. É o
 > servidor que o abre, não o cliente."
 
 **Depois, o leilão a decorrer, com as duas janelas lado a lado:**

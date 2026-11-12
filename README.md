@@ -183,7 +183,10 @@ ainda não foi validado: é o que permite demonstrar a aprovação no painel do 
 - Gestão do catálogo: criar, editar e apagar produtos, com upload de fotografia.
 - Encomendas recebidas, com filtro por estado e botão para avançar o estado
   (o comprador é notificado na hora).
-- **Agendar leilões** (lote, preço base, incremento, quanto falta para abrir e duração).
+- **Agendar leilões** (lote, preço base, incremento, hora de abertura e duração).
+  A abertura escolhe-se **à hora e ao minuto**, em duas listas, entre as 08:00 e as 18:00
+  do próprio dia — num telemóvel são as rodas de escolha do sistema. O formulário diz
+  quanto falta ("Abre daqui a 1h 29min.") e não deixa escolher uma hora que já passou.
   A duração escreve-se em três campos — **dias, horas e minutos** —, até ao máximo de uma
   semana. Assim tanto se agenda um leilão de 30 minutos como um de 2h30 ou de 4 dias, sem
   ninguém ter de converter nada de cabeça. O formulário diz por baixo quanto vai durar
@@ -747,8 +750,8 @@ recebeu `recusada`, e o estado no servidor e nos dois clientes ficou igual.
 
 ### 14.3. Os três estados de um leilão
 
-Um leilão não nasce aberto. Quem o cria escolhe daqui a quanto tempo abre — entre
-**3 e 60 minutos** — e quanto tempo dura a partir daí:
+Um leilão não nasce aberto. Quem o cria escolhe **a que horas abre** — à hora e ao minuto,
+entre as 08:00 e as 18:00 do próprio dia — e quanto tempo dura a partir daí:
 
 ```
 agendado  ──(comecaEm)──>  ativo  ──(terminaEm)──>  terminado
@@ -757,6 +760,11 @@ agendado  ──(comecaEm)──>  ativo  ──(terminaEm)──>  terminado
 O tempo de espera não é um capricho: sem ele, um leilão de 10 minutos criado às 15h00
 estaria a meio antes de alguém dar por ele. Com o aviso, os compradores entram na sala
 antes de abrir e ficam a ver a contagem decrescente.
+
+O formulário envia o instante completo (`comecaEm`) e o servidor volta a verificá-lo:
+tem de faltar pelo menos um minuto, não pode ser dali a mais de 24 horas e a hora do dia
+tem de cair entre as 08:00 e as 18:00. Essa última é lida no **relógio do servidor**, não
+no de quem submete — é por isso que o serviço publicado corre com `TZ=Europe/Lisbon`.
 
 **As mudanças de estado são só do servidor.** Um `setInterval` de 3 em 3 segundos
 procura leilões agendados cuja hora chegou (`comecaEm: { $lte: agora }`) e ativos que
@@ -924,6 +932,7 @@ qualquer endereço serve o `index.html` e é o React Router que decide o que mos
 | Render | `JWT_SECRET` | segredo novo, gerado só para produção |
 | Render | `JWT_EXPIRA` | `8h` |
 | Render | `CORS_ORIGIN` | endereço da SPA na Vercel |
+| Render | `TZ` | `Europe/Lisbon`, para o servidor validar as horas de abertura no fuso certo |
 | Vercel | `VITE_API_URL` | endereço da API no Render |
 
 ### 15.4 Ordem de publicação

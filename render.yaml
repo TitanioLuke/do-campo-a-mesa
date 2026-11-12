@@ -22,5 +22,9 @@ services:
         sync: false
       - key: JWT_EXPIRA
         value: 8h
+      # O servidor valida a hora de abertura dos leilões com o seu próprio
+      # relógio, por isso tem de correr no fuso de Portugal.
+      - key: TZ
+        value: Europe/Lisbon
       - key: CORS_ORIGIN
         sync: false

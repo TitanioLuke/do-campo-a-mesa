@@ -5,11 +5,15 @@ const autenticar = require('../middleware/auth');
 
 const router = express.Router();
 
-// Quanto tempo pode faltar para um leilão abrir: nem já, para dar tempo aos
-// compradores de entrarem na sala, nem daqui a muito, para o leilão não cair
-// no esquecimento.
-const MINUTOS_ATE_COMECAR_MIN = 3;
-const MINUTOS_ATE_COMECAR_MAX = 60;
+// A que horas é que um leilão pode abrir. É uma regra de negócio: as aberturas
+// são em horário de trabalho, senão não há ninguém na sala para licitar.
+const HORA_ABERTURA_MIN = 8;
+const HORA_ABERTURA_MAX = 18;
+
+// E com que antecedência. Nem já — os compradores precisam de tempo para entrar
+// na sala — nem daqui a muito, para o leilão não cair no esquecimento.
+const ANTECEDENCIA_MINIMA_MS = 60 * 1000;
+const ANTECEDENCIA_MAXIMA_MS = 24 * 60 * 60 * 1000;
 
 // Quanto pode durar um leilão. A API fala sempre em minutos — é a unidade mais
 // pequena que faz sentido aqui e evita ter de interpretar unidades no servidor.
@@ -57,36 +61,51 @@ router.get('/:id/bids', async (req, res) => {
 /**
  * POST /api/auctions — o produtor cria um leilão.
  *
- * O leilão nasce AGENDADO: abre daqui a `minutosAteComecar` (entre 3 e 60) e
- * dura `duracaoMinutos` a partir daí. É o servidor que o abre e o fecha na hora
- * certa, por isso as datas não vêm do relógio do cliente.
+ * O leilão nasce AGENDADO: abre em `comecaEm` (uma hora do próprio dia, entre
+ * as 8h e as 18h) e dura `duracaoMinutos` a partir daí. É o servidor que o abre
+ * e o fecha na hora certa, por isso o relógio de quem licita não conta.
  *
  * `licitacaoAtual.valor` começa no preço base: a 1.ª licitação válida é
  * precoBase + incremento.
  */
 router.post('/', autenticar('produtor'), async (req, res) => {
-  const { lote, descricao, imagem, precoBase, incremento, duracaoMinutos, minutosAteComecar } = req.body;
+  const { lote, descricao, imagem, precoBase, incremento, duracaoMinutos } = req.body;
 
-  if (!lote || precoBase === undefined || !duracaoMinutos || !minutosAteComecar) {
+  if (!lote || precoBase === undefined || !duracaoMinutos || !req.body.comecaEm) {
     return res.status(400).json({
-      erro: 'Lote, preço base, tempo até começar e duração são obrigatórios',
+      erro: 'Lote, preço base, hora de abertura e duração são obrigatórios',
     });
   }
 
-  const ateComecar = Number(minutosAteComecar);
-  if (ateComecar < MINUTOS_ATE_COMECAR_MIN || ateComecar > MINUTOS_ATE_COMECAR_MAX) {
+  const comecaEm = new Date(req.body.comecaEm);
+  if (Number.isNaN(comecaEm.getTime())) {
+    return res.status(400).json({ erro: 'Hora de abertura inválida' });
+  }
+
+  const daquiA = comecaEm.getTime() - Date.now();
+  if (daquiA < ANTECEDENCIA_MINIMA_MS) {
+    return res.status(400).json({ erro: 'O leilão tem de abrir daqui a pelo menos um minuto' });
+  }
+  if (daquiA > ANTECEDENCIA_MAXIMA_MS) {
+    return res.status(400).json({ erro: 'O leilão tem de abrir nas próximas 24 horas' });
+  }
+
+  // A hora do dia é lida no relógio do servidor, não no do cliente (por isso o
+  // serviço publicado corre com TZ=Europe/Lisbon).
+  const horaDoDia = comecaEm.getHours() + comecaEm.getMinutes() / 60;
+  if (horaDoDia < HORA_ABERTURA_MIN || horaDoDia > HORA_ABERTURA_MAX) {
     return res.status(400).json({
-      erro: `O leilão tem de começar daqui a ${MINUTOS_ATE_COMECAR_MIN} a ${MINUTOS_ATE_COMECAR_MAX} minutos`,
+      erro: `Os leilões só abrem entre as ${String(HORA_ABERTURA_MIN).padStart(2, '0')}:00`
+        + ` e as ${HORA_ABERTURA_MAX}:00`,
     });
   }
+
   const duracao = Number(duracaoMinutos);
   if (!Number.isInteger(duracao) || duracao < DURACAO_MINUTOS_MIN || duracao > DURACAO_MINUTOS_MAX) {
     return res.status(400).json({
       erro: `A duração tem de ser um número inteiro de minutos, entre ${DURACAO_MINUTOS_MIN} e ${DURACAO_MINUTOS_MAX} (uma semana)`,
     });
   }
-
-  const comecaEm = new Date(Date.now() + ateComecar * 60 * 1000);
 
   const leilao = await Auction.create({
     produtor: req.user.id,

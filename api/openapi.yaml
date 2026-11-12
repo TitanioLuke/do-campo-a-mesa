@@ -348,9 +348,9 @@ paths:
       tags: [Leilões]
       summary: Agendar leilão (apenas produtor)
       description: >
-        O leilão nasce no estado `agendado` e abre daqui a `minutosAteComecar`
-        (entre 3 e 60), ficando `ativo` durante `duracaoMinutos` (até uma
-        semana). É o servidor
+        O leilão nasce no estado `agendado` e abre em `comecaEm` — uma hora do
+        próprio dia, entre as 08:00 e as 18:00 —, ficando `ativo` durante
+        `duracaoMinutos` (até uma semana). É o servidor
         que o abre e o fecha na hora certa.
       security: [{ bearerAuth: [] }]
       requestBody:
@@ -359,14 +359,22 @@ paths:
           application/json:
             schema:
               type: object
-              required: [lote, precoBase, minutosAteComecar, duracaoMinutos]
+              required: [lote, precoBase, comecaEm, duracaoMinutos]
               properties:
                 lote: { type: string }
                 descricao: { type: string }
                 imagem: { type: string }
                 precoBase: { type: number }
                 incremento: { type: number, default: 5 }
-                minutosAteComecar: { type: integer, minimum: 3, maximum: 60 }
+                comecaEm:
+                  type: string
+                  format: date-time
+                  description: >-
+                    Instante em que o leilão abre. Tem de faltar pelo menos um
+                    minuto, não pode ser dali a mais de 24 horas e a hora do dia
+                    tem de estar entre as 08:00 e as 18:00 (lidas no relógio do
+                    servidor).
+                  example: '2026-11-12T14:35:00.000Z'
                 duracaoMinutos:
                   type: integer
                   minimum: 1
@@ -382,7 +390,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Leilao' }
-        '400': { description: Dados inválidos ou tempo até começar fora de 3 a 60 minutos }
+        '400': { description: Dados inválidos, hora de abertura fora das 08:00–18:00 ou duração fora dos limites }
         '401': { description: Token em falta ou inválido }
         '403': { description: Sem permissão }
 

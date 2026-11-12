@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, dataPt, euros } from '../../servicos/api';
 import { useAuth } from '../../contexto/AuthContext';
@@ -14,10 +14,38 @@ import ModalConfirmar from '../../componentes/ModalConfirmar';
 // nem 150 minutos que alguém tem de calcular de cabeça.
 const DURACAO_MAXIMA_MINUTOS = 7 * 24 * 60; // uma semana, o mesmo limite do servidor
 
-const VAZIO = {
-  lote: '', descricao: '', precoBase: '', incremento: 5, minutosAteComecar: 5,
-  dias: 0, horas: 0, minutos: 30, imagem: '',
-};
+// O leilão abre a uma hora do próprio dia, em horário de trabalho — os mesmos
+// limites que o servidor volta a verificar.
+const HORA_ABERTURA_MIN = 8;
+const HORA_ABERTURA_MAX = 18;
+const HORAS = Array.from({ length: HORA_ABERTURA_MAX - HORA_ABERTURA_MIN + 1 },
+  (_, i) => String(HORA_ABERTURA_MIN + i).padStart(2, '0'));
+const MINUTOS = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
+
+/**
+ * O próximo horário certo: daqui a 5 minutos, arredondado para cima aos 5, e
+ * sempre dentro do horário de abertura. É o que o formulário propõe de início.
+ */
+function proximaAbertura() {
+  const quando = new Date(Date.now() + 5 * 60 * 1000);
+  quando.setMinutes(Math.ceil(quando.getMinutes() / 5) * 5, 0, 0);
+
+  let hora = quando.getHours();
+  let minuto = quando.getMinutes();
+  if (hora < HORA_ABERTURA_MIN) { hora = HORA_ABERTURA_MIN; minuto = 0; }
+  if (hora >= HORA_ABERTURA_MAX) { hora = HORA_ABERTURA_MAX; minuto = 0; }
+
+  return { hora: String(hora).padStart(2, '0'), minuto: String(minuto).padStart(2, '0') };
+}
+
+/** O formulário vazio. É uma função porque a hora proposta depende de agora. */
+function formVazio() {
+  const { hora, minuto } = proximaAbertura();
+  return {
+    lote: '', descricao: '', precoBase: '', incremento: 5,
+    hora, minuto, dias: 0, horas: 0, minutos: 30, imagem: '',
+  };
+}
 
 /** 150 → "2h 30min"; serve para o produtor confirmar o que escreveu. */
 function emPalavras(total) {
@@ -37,7 +65,16 @@ export default function MeusLeiloes() {
   // A lista está em tempo real: as licitações dos compradores aparecem aqui
   const { leiloes, recarregar } = useListaLeiloes(`?produtor=${utilizador._id}`);
 
-  const [form, setForm] = useState(VAZIO);
+  const [form, setForm] = useState(formVazio);
+
+  // O relógio vive no estado e avança de 30 em 30 segundos, como no Contador.
+  // Assim a frase "Abre daqui a …" acompanha o tempo a passar em vez de ficar
+  // parada no instante em que a página foi aberta.
+  const [agora, setAgora] = useState(() => Date.now());
+  useEffect(() => {
+    const intervalo = setInterval(() => setAgora(Date.now()), 30 * 1000);
+    return () => clearInterval(intervalo);
+  }, []);
   const [aApagar, setAApagar] = useState(null);
 
   const mudar = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
@@ -46,6 +83,21 @@ export default function MeusLeiloes() {
   const duracaoMinutos =
     (Number(form.dias) || 0) * 1440 + (Number(form.horas) || 0) * 60 + (Number(form.minutos) || 0);
   const duracaoValida = duracaoMinutos >= 1 && duracaoMinutos <= DURACAO_MAXIMA_MINUTOS;
+
+  // A hora escolhida, no dia de hoje. O servidor recebe o instante completo.
+  const comecaEm = new Date(agora);
+  comecaEm.setHours(Number(form.hora), Number(form.minuto), 0, 0);
+  const faltam = Math.round((comecaEm.getTime() - agora) / 60000);
+  const horaValida = comecaEm.getTime() - agora >= 60 * 1000;
+  const foraDeHoras = new Date(agora).getHours() >= HORA_ABERTURA_MAX;
+
+  // Às 18:00 em ponto fecha a janela, por isso essa hora só admite os minutos a 00.
+  const minutosPossiveis = form.hora === String(HORA_ABERTURA_MAX) ? ['00'] : MINUTOS;
+
+  function mudarHora(evento) {
+    const hora = evento.target.value;
+    setForm({ ...form, hora, minuto: hora === String(HORA_ABERTURA_MAX) ? '00' : form.minuto });
+  }
 
   async function escolherImagem(evento) {
     const ficheiro = evento.target.files?.[0];
@@ -69,11 +121,11 @@ export default function MeusLeiloes() {
         imagem: form.imagem,
         precoBase: Number(form.precoBase),
         incremento: Number(form.incremento),
-        minutosAteComecar: Number(form.minutosAteComecar),
+        comecaEm: comecaEm.toISOString(),
         duracaoMinutos,
       });
-      sucesso(`Leilão "${form.lote}" agendado para daqui a ${form.minutosAteComecar} minutos.`);
-      setForm(VAZIO);
+      sucesso(`Leilão "${form.lote}" agendado para as ${form.hora}:${form.minuto}.`);
+      setForm(formVazio());
       recarregar();
     } catch (e) {
       erro(e.message);
@@ -113,9 +165,23 @@ export default function MeusLeiloes() {
             <input id="incremento" type="number" min="1" step="1" className="form-control" required value={form.incremento} onChange={mudar('incremento')} />
           </div>
           <div className="col-12 col-md-3">
-            <label className="form-label small mb-1" htmlFor="comeca">Começa daqui a (min)</label>
-            <input id="comeca" type="number" min="3" max="60" className="form-control" required value={form.minutosAteComecar} onChange={mudar('minutosAteComecar')} />
-            <small className="text-black-50">entre 3 e 60</small>
+            <label className="form-label small mb-1" htmlFor="hora">Começa hoje às</label>
+            <div className="input-group">
+              <select id="hora" className="form-select" value={form.hora} onChange={mudarHora} aria-label="Hora">
+                {HORAS.map((h) => <option key={h} value={h}>{h}</option>)}
+              </select>
+              <span className="input-group-text px-2">:</span>
+              <select className="form-select" value={form.minuto} onChange={mudar('minuto')} aria-label="Minutos">
+                {minutosPossiveis.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <small className={horaValida ? 'text-black-50' : 'text-danger'}>
+              {foraDeHoras
+                ? `Hoje já não dá: as aberturas são entre as 0${HORA_ABERTURA_MIN}:00 e as ${HORA_ABERTURA_MAX}:00.`
+                : horaValida
+                  ? `Abre daqui a ${emPalavras(faltam)}.`
+                  : 'Essa hora já passou.'}
+            </small>
           </div>
           <div className="col-12 col-md-6">
             <label className="form-label small mb-1" htmlFor="duracao-dias">Duração</label>
@@ -151,7 +217,7 @@ export default function MeusLeiloes() {
           </div>
 
           <div className="col-12">
-            <button className="btn btn-terracota" disabled={!duracaoValida}>Agendar leilão</button>
+            <button className="btn btn-terracota" disabled={!duracaoValida || !horaValida}>Agendar leilão</button>
             <p className="small text-black-50 mt-2 mb-0">
               O leilão abre sozinho à hora marcada e fecha quando a duração acabar.
               O tempo até abrir dá aos compradores a hipótese de entrarem na sala a tempo.
