@@ -54,7 +54,8 @@ vários compradores a licitar em simultâneo.
 
 ### Pré-requisitos
 
-- Node.js 20 ou superior
+- Node.js 22 ou superior (fixado em `engines` nos dois `package.json`, para o Render e a
+  Vercel escolherem a mesma versão que a máquina de desenvolvimento)
 - MongoDB a correr localmente em `mongodb://127.0.0.1:27017`
   (ou um URI do MongoDB Atlas)
 
@@ -1107,6 +1108,9 @@ melhor argumento a favor do PaaS.
 
 Os segredos ficam marcados com `sync: false`: aparecem no painel do Render à espera de valor e
 **nunca entram no repositório**.
+
+A versão do Node não está aqui: está no `engines` do `package.json`, que tanto o Render como a
+Vercel leem. Fica num sítio só e vale também para quem clonar o repositório.
 
 **`web/vercel.json`** tem uma regra só:
 
