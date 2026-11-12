@@ -833,51 +833,125 @@ encomenda, o produtor recebe `nova-encomenda` e o painel recarrega os indicadore
 
 ## 15. Deployment na Cloud
 
-Este passo era **opcional** no enunciado e não chegou a ser publicado. Fica aqui a justificação
-do modelo de serviço que seria usado e o que já está preparado no código.
+Este passo era **opcional** no enunciado. A aplicação está preparada para ser publicada e a
+configuração está versionada no repositório, em `render.yaml` e `web/vercel.json` — não é uma
+intenção escrita no relatório, são ficheiros que as plataformas leem.
 
 **Modelo escolhido: PaaS + BaaS.**
 
 | Componente | Serviço | Modelo |
 | --- | --- | --- |
-| API + Socket.io | Azure App Service (Linux, Node 20) | **PaaS** |
-| SPA | Azure Static Web Apps | **PaaS** |
-| Base de dados | MongoDB Atlas (tier gratuito M0) | **BaaS** |
-| Imagens | Azure Blob Storage | **BaaS** |
+| API REST + Socket.io | Render — *Web Service* (Node) | **PaaS** |
+| SPA React | Vercel | **PaaS** |
+| Base de dados | MongoDB Atlas (*tier* gratuito M0) | **BaaS** |
+| Imagens carregadas | disco do serviço (ver 15.6) | — |
 
-**Porquê PaaS e não IaaS.** Numa IaaS (máquinas virtuais) seria preciso instalar e manter o
-sistema operativo, o Node, um proxy inverso, os certificados TLS e as atualizações de segurança.
-Nada disso é específico desta aplicação: é trabalho de operação que não acrescenta valor ao
-trabalho. Em PaaS entrega-se o código e a plataforma trata do runtime, do HTTPS, do balanceamento
-e do escalamento; em troca perde-se controlo sobre o ambiente, o que aqui não é limitação.
-A base de dados e o armazenamento de imagens vão em BaaS pela mesma razão, com a vantagem extra
-de backups e réplicas já incluídos.
+### 15.1 Porquê PaaS e não IaaS
 
-**O que o código já tem preparado:**
+Numa IaaS (máquinas virtuais) seria preciso instalar e manter o sistema operativo, o Node, um
+proxy inverso, os certificados TLS e as atualizações de segurança. Nada disso é específico desta
+aplicação: é trabalho de operação que não acrescenta valor ao trabalho. Em PaaS entrega-se o
+código e a plataforma trata do *runtime*, do HTTPS, do balanceamento e do escalamento; em troca
+perde-se controlo sobre o ambiente, o que aqui não é limitação. A base de dados vai em BaaS pela
+mesma razão, com a vantagem extra de ter backups e réplicas já incluídos.
 
-- Todas as configurações vêm de variáveis de ambiente (`MONGODB_URI`, `JWT_SECRET`, `PORT` na API;
-  `VITE_API_URL` no frontend), por isso publicar é só definir as *app settings* — não há nada
-  para mudar no código.
-- O `MONGODB_URI` aceita um URI `mongodb+srv://` do Atlas sem qualquer alteração.
-- O upload de imagens está isolado em `api/src/middleware/upload.js`. Trocar o disco local por
-  Blob Storage é mudar só este ficheiro: o resto da aplicação continua a receber um URL.
-- O Socket.io é servido no mesmo servidor HTTP da API, por isso basta ativar WebSockets no
-  App Service (`az webapp config set --web-sockets-enabled true`).
+### 15.2 Porquê Render e Vercel, e não Azure
 
-Comandos (Azure CLI) que publicariam a API:
+O primeiro plano era o Azure, por ser uma suite integrada: App Service para a API, Static Web
+Apps para a SPA e Blob Storage para as imagens. O **Azure for Students recusou a conta** — o
+domínio institucional não consta da lista de verificação académica da Microsoft — e a alternativa
+era uma subscrição paga com cartão associado.
 
-```bash
-az group create -n dcm-rg -l westeurope
-az appservice plan create -n dcm-plan -g dcm-rg --sku B1 --is-linux
-az webapp create -n dcm-api -g dcm-rg -p dcm-plan --runtime "NODE:20-lts"
-az webapp config appsettings set -n dcm-api -g dcm-rg --settings \
-  MONGODB_URI="mongodb+srv://..." JWT_SECRET="..." PORT=8080
-az webapp config set -n dcm-api -g dcm-rg --web-sockets-enabled true
-az webapp deploy -n dcm-api -g dcm-rg --src-path api.zip --type zip
+O Render e a Vercel dão exatamente o mesmo modelo de serviço (PaaS sobre o código, BaaS para a
+base de dados), com planos gratuitos e sem cartão. O que se perde é ter o armazenamento de
+objetos na mesma suite, que é a limitação descrita em 15.6.
+
+O que **não** se perdeu foi nenhuma linha de código. Toda a configuração vem de variáveis de
+ambiente, por isso mudar de fornecedor foi reconfigurar, não reprogramar — o que é, em si, o
+melhor argumento a favor do PaaS.
+
+### 15.3 O que está no repositório
+
+**`render.yaml`** descreve o serviço da API:
+
+| Chave | Valor | Porquê |
+| --- | --- | --- |
+| `rootDir` | `api` | o repositório tem a API e a SPA; o Render só constrói esta pasta |
+| `buildCommand` | `npm install` | não há passo de compilação: a API é CommonJS, corre como está |
+| `startCommand` | `npm start` | → `node src/server.js` |
+| `healthCheckPath` | `/api/health` | a rota já existia; o Render usa-a para saber se o serviço subiu |
+| `region` | `frankfurt` | o mais próximo, para a latência das licitações |
+
+Os segredos ficam marcados com `sync: false`: aparecem no painel do Render à espera de valor e
+**nunca entram no repositório**.
+
+**`web/vercel.json`** tem uma regra só:
+
+```json
+{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
 ```
 
-Em desenvolvimento, as imagens ficam em `api/uploads/` e são servidas pelo Express
-(`app.use('/uploads', express.static(...))`).
+É o que faz uma SPA funcionar num alojamento estático. O routing é do React Router, no browser:
+`/leiloes` não existe como ficheiro no servidor. Sem esta regra, abrir ou recarregar essa
+página diretamente devolveria 404 — a Vercel procuraria um ficheiro com esse nome. Com ela,
+qualquer endereço serve o `index.html` e é o React Router que decide o que mostrar.
+
+**Variáveis de ambiente:**
+
+| Onde | Variável | Valor |
+| --- | --- | --- |
+| Render | `MONGODB_URI` | URI do cluster do Atlas |
+| Render | `JWT_SECRET` | segredo novo, gerado só para produção |
+| Render | `JWT_EXPIRA` | `8h` |
+| Render | `CORS_ORIGIN` | endereço da SPA na Vercel |
+| Vercel | `VITE_API_URL` | endereço da API no Render |
+
+### 15.4 Ordem de publicação
+
+Há uma dependência circular: a API precisa de saber o endereço da SPA (para o CORS) e a SPA
+precisa de saber o endereço da API. Resolve-se publicando primeiro e configurando depois:
+
+1. **Atlas** — criar o cluster, o utilizador da base de dados e autorizar `0.0.0.0/0` na lista
+   de IPs (o plano gratuito do Render não garante um IP fixo, por isso não há endereço para
+   restringir). Correr `npm run seed` uma vez, localmente, já com o `MONGODB_URI` do Atlas.
+2. **Render** — ligar o repositório; o `render.yaml` é lido automaticamente. Preencher
+   `MONGODB_URI` e `JWT_SECRET`. Fica com um endereço `…onrender.com`.
+3. **Vercel** — importar o repositório com a raiz em `web/` e definir `VITE_API_URL` com o
+   endereço do passo 2. Fica com um endereço `…vercel.app`.
+4. **Voltar ao Render** — definir `CORS_ORIGIN` com o endereço do passo 3. Só a partir daqui a
+   API deixa de aceitar qualquer origem (ver `api/src/origens.js`).
+
+### 15.5 Socket.io em produção
+
+Os *web services* do Render suportam WebSocket nativamente: não há nada para ativar — ao
+contrário do App Service do Azure, que exigia `--web-sockets-enabled true`. O cliente liga-se à
+mesma origem da API, e o CORS do Socket.io usa a mesma lista de `origensPermitidas()` das rotas
+REST, por isso configurar o `CORS_ORIGIN` cobre os dois.
+
+Uma característica do plano gratuito que convém saber de antemão: **o serviço adormece depois de
+15 minutos sem pedidos** e o primeiro pedido seguinte demora cerca de 50 segundos a responder,
+enquanto o contentor arranca. Não afeta o código nem os dados, mas afeta uma demonstração ao
+vivo — basta abrir a aplicação alguns minutos antes.
+
+### 15.6 Limitação conhecida: as imagens carregadas
+
+O enunciado sugere guardar as imagens num serviço de armazenamento de objetos (Blob Storage, S3,
+Cloud Storage). **Esta aplicação não o faz**, e vale a pena ser explícito sobre o que isso
+significa.
+
+As imagens são recebidas pelo Multer, gravadas em `api/uploads/` e servidas pelo Express
+(`app.use('/uploads', express.static(...))`). Em desenvolvimento funciona bem. No plano gratuito
+do Render o disco é **efémero**: é recriado a cada publicação e a cada despertar do serviço, por
+isso uma fotografia carregada por um produtor desaparece mais tarde ou mais cedo.
+
+Os dados de demonstração não dependem disto: as imagens do `seed.js` são SVG em *data URI*,
+guardados dentro dos próprios documentos, e por isso sobrevivem a qualquer reinício.
+
+Ficou de fora por decisão de âmbito, para não acrescentar um SDK e um fornecedor de
+armazenamento a um trabalho que já tinha de ser todo explicável oralmente. O custo dessa decisão
+é pequeno e está localizado: o upload está isolado em `api/src/middleware/upload.js`, com cerca
+de vinte linhas. Trocar o `diskStorage` do Multer pelo cliente do fornecedor é mudar esse
+ficheiro e mais nada — o resto da aplicação continua a receber um URL e não sabe de onde vem.
 
 ---
 
