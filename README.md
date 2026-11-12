@@ -93,8 +93,8 @@ cd api && npm run seed
 ```
 
 **Só é preciso correr uma vez.** O comando apaga tudo o que estiver na base de dados e
-volta a criá-la de raiz, com 12 utilizadores, 28 produtos, 16 encomendas espalhadas pelas
-últimas seis semanas, 18 avaliações e 7 leilões: 3 a decorrer que duram vários dias, 2 já
+volta a criá-la de raiz, com 13 utilizadores, 29 produtos, 16 encomendas espalhadas pelas
+últimas seis semanas, 19 avaliações e 7 leilões: 3 a decorrer que duram vários dias, 2 já
 terminados com histórico de licitações, 1 agendado que abre sozinho daqui a poucos minutos
 e 1 relâmpago que termina daqui a 3 minutos, para se ver o prolongamento automático
 (secção 14.8) sem ter de esperar. A partir daí os dados ficam guardados no
@@ -152,7 +152,8 @@ automaticamente uma conta de cada papel.
 | Produtor | `apiario@dcm.pt` | Apiário do Minho, Arcos de Valdevez — 5 produtos, leilão a decorrer |
 | Produtor | `queijaria@dcm.pt` | Queijaria do Lima, Ponte da Barca — 4 produtos |
 | Produtor | `adega@dcm.pt` | Adega do Alvarinho, Monção — 4 produtos, leilão a decorrer |
-| Produtor | `pomar@dcm.pt` | Pomar das Caldas, Caldas de Vizela — **pendente de validação** |
+| Produtor | `pomar@dcm.pt` | Pomar das Caldas, Caldas de Vizela — **por validar**, já com 2 produtos à espera |
+| Produtor | `vinha@dcm.pt` | Vinha do Lima, Ponte de Lima — **por validar**, registo acabado de criar |
 | Comprador | `ana@dcm.pt` | 4 encomendas, 4 avaliações feitas |
 | Comprador | `bruno@dcm.pt` | 3 encomendas, uma ainda pendente |
 | Comprador | `carla@dcm.pt` | Ganhou um leilão, tem licitações a decorrer |

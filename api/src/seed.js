@@ -115,6 +115,9 @@ async function seed() {
     nome: 'Administrador', email: 'admin@dcm.pt', papel: 'admin', data: haDias(240),
   })]);
 
+  // Há DOIS registos por validar de propósito: na demonstração dá para mostrar
+  // os dois caminhos do administrador — aprovar um e rejeitar o outro — e as
+  // duas notificações que cada decisão manda ao produtor.
   const [quinta, horta, apiario, queijaria, adega, pomar] = await inserir(User, [
     conta({
       nome: 'Quinta do Vale', email: 'quinta@dcm.pt', papel: 'produtor',
@@ -163,6 +166,13 @@ async function seed() {
       descricao: 'Pomar de cereja e ameixa à espera de validação para começar a vender.',
       latitude: 41.3733, longitude: -8.2956, data: haDias(3),
     }),
+    conta({
+      nome: 'Vinha do Lima', email: 'vinha@dcm.pt', papel: 'produtor',
+      localidade: 'Ponte de Lima', telefone: '258 900 700', aprovado: 'pendente',
+      morada: 'Rua da Vinha 5, Fontão, 4990-620 Ponte de Lima',
+      descricao: 'Registo acabado de criar, ainda sem apresentação nem produtos.',
+      latitude: 41.7574, longitude: -8.5875, data: haDias(0),
+    }),
   ]);
 
   // Moradas guardadas no perfil do comprador. São as mesmas que aparecem nas
@@ -210,6 +220,9 @@ async function seed() {
     prod(quinta, 'Abóbora Manteiga', 'Hortícolas', 1.80, 'kg', 3, false, 'Outono', 95, 'Doce e cremosa, ideal para sopas e assados.'),
     prod(quinta, 'Nabo da Terra', 'Hortícolas', 1.30, 'kg', 35, true, 'Inverno', 70, 'Nabo de raiz branca, com as rama incluída.'),
     prod(quinta, 'Pera Rocha', 'Fruta', 2.20, 'kg', 48, false, 'Outono', 55, 'Pera Rocha do Oeste, crocante e sumarenta.'),
+    // Stock a zero de propósito: é o que mostra o "Esgotado" no catálogo e o
+    // botão de juntar ao carrinho desligado.
+    prod(quinta, 'Castanha da Padrela', 'Fruta', 4.20, 'kg', 0, false, 'Outono', 50, 'Castanha grande e doce. A colheita deste ano esgotou.'),
 
     // --- Horta da Serra ---
     prod(horta, 'Tomate Coração de Boi', 'Hortícolas', 2.90, 'kg', 30, false, 'Verão', 115, 'Tomate de polpa carnuda e pouca semente.'),
@@ -287,12 +300,13 @@ async function seed() {
   // Só de quem tem encomendas entregues: com `produto` são ao produto,
   // com `produto: null` são ao produtor.
 
-  const av = (comprador, produtor, produto, nota, comentario, dias) => ({
+  const av = (comprador, produtor, produto, nota, comentario, dias, denunciada = false) => ({
     produto: produto ? produto._id : null,
     produtor: produtor._id,
     comprador: comprador._id,
     nome: comprador.nome,
     nota, comentario, data: haDias(dias),
+    denunciada,
   });
 
   const avaliacoes = await inserir(Review, [
@@ -317,6 +331,14 @@ async function seed() {
     av(carla, adega, null, 4, 'Bom atendimento. A entrega demorou um dia mais do que o previsto.', 23),
     av(lagar, horta, null, 5, 'Fornecem o nosso restaurante há meses, nunca falharam uma entrega.', 18),
     av(diogo, apiario, null, 5, 'Explicaram-me a diferença entre os méis todos. Recomendo.', 11),
+
+    // --- uma denunciada, à espera do administrador ---
+    // Não fala do produto nem da entrega: é publicidade a outro sítio. É o
+    // caso que a moderação existe para resolver, e deixa a tab "Moderar
+    // avaliações" com trabalho para a demonstração.
+    av(bruno, queijaria, prd['Requeijão'], 1,
+      'Não vale a pena comprar aqui, vão antes à loja do meu primo que é mais barato. Tel. 900 000 000.',
+      5, true),
   ]);
 
   // Recalcular a média de cada produto a partir das avaliações criadas
@@ -333,7 +355,7 @@ async function seed() {
   // Os ativos duram vários dias, para não ser preciso repor os dados. Há ainda
   // um agendado, que abre sozinho daqui a poucos minutos — serve para mostrar
   // na demonstração a sala a abrir em direto —, e um relâmpago, que termina
-  // daqui a 3 minutos, para se ver o prolongamento automático sem esperar.
+  // daqui a 5 minutos, para se ver o prolongamento automático sem esperar.
 
   const [kiwi, mel, alvarinho, batata, queijo] = await inserir(Auction, [
     {
@@ -393,7 +415,9 @@ async function seed() {
       imagem: criarImagem('Lote de Queijo', 'Queijo'),
       precoBase: 50, incremento: 5,
       licitacaoAtual: { valor: 50, comprador: null, nome: '' },
-      comecaEm: daquiAMinutos(-1), terminaEm: daquiAMinutos(3),
+      // 5 minutos: dá para abrir duas janelas com dois compradores e ainda
+      // apanhar os últimos 30 segundos, que são os do prolongamento.
+      comecaEm: daquiAMinutos(-1), terminaEm: daquiAMinutos(5),
       estado: 'ativo', data: haDias(0),
     },
   ]);
@@ -424,7 +448,7 @@ Base de dados preenchida.
   Administrador   admin@dcm.pt
   Produtores      quinta@dcm.pt · horta@dcm.pt · apiario@dcm.pt
                   queijaria@dcm.pt · adega@dcm.pt
-                  pomar@dcm.pt  (pendente de validação)
+                  pomar@dcm.pt · vinha@dcm.pt  (por validar)
   Compradores     ana@dcm.pt · bruno@dcm.pt · carla@dcm.pt
                   diogo@dcm.pt · lagar@dcm.pt
 `);
