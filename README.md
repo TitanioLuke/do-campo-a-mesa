@@ -184,8 +184,10 @@ ainda não foi validado: é o que permite demonstrar a aprovação no painel do 
 - Encomendas recebidas, com filtro por estado e botão para avançar o estado
   (o comprador é notificado na hora).
 - **Agendar leilões** (lote, preço base, incremento, quanto falta para abrir e duração).
-  A duração escreve-se **em minutos, horas ou dias**, até ao máximo de uma semana — ninguém
-  tem de converter 4 dias em 5760 minutos de cabeça.
+  A duração escreve-se em três campos — **dias, horas e minutos** —, até ao máximo de uma
+  semana. Assim tanto se agenda um leilão de 30 minutos como um de 2h30 ou de 4 dias, sem
+  ninguém ter de converter nada de cabeça. O formulário diz por baixo quanto vai durar
+  ("O leilão dura 2h 30min.") e não deixa agendar se a soma for zero ou passar a semana.
   O leilão abre e fecha sozinho à hora marcada.
 - Editar a sua **página pública** (nome, concelho, telefone e apresentação), com
   pré-visualização ao lado do formulário. O mapa é colocado automaticamente no concelho

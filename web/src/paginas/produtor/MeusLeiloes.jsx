@@ -8,15 +8,28 @@ import NavProdutor from './NavProdutor';
 import Contador from '../../componentes/Contador';
 import ModalConfirmar from '../../componentes/ModalConfirmar';
 
-// O produtor escolhe a unidade que lhe dá jeito; a API recebe sempre minutos.
-// Assim ninguém tem de fazer contas de cabeça para um leilão de 4 dias.
-const UNIDADES = { minutos: 1, horas: 60, dias: 60 * 24 };
+// A duração escreve-se em três campos — dias, horas e minutos — e a API recebe
+// a soma em minutos. Três campos em vez de um valor e uma unidade porque as
+// durações reais não são redondas: 2 horas e meia são 2h30, e não 2,5 horas
+// nem 150 minutos que alguém tem de calcular de cabeça.
 const DURACAO_MAXIMA_MINUTOS = 7 * 24 * 60; // uma semana, o mesmo limite do servidor
 
 const VAZIO = {
-  lote: '', descricao: '', precoBase: '', incremento: 5,
-  minutosAteComecar: 5, duracaoValor: 30, duracaoUnidade: 'minutos', imagem: '',
+  lote: '', descricao: '', precoBase: '', incremento: 5, minutosAteComecar: 5,
+  dias: 0, horas: 0, minutos: 30, imagem: '',
 };
+
+/** 150 → "2h 30min"; serve para o produtor confirmar o que escreveu. */
+function emPalavras(total) {
+  const dias = Math.floor(total / 1440);
+  const horas = Math.floor((total % 1440) / 60);
+  const minutos = total % 60;
+  return [
+    dias && `${dias} ${dias === 1 ? 'dia' : 'dias'}`,
+    horas && `${horas}h`,
+    minutos && `${minutos}min`,
+  ].filter(Boolean).join(' ');
+}
 
 export default function MeusLeiloes() {
   const { utilizador } = useAuth();
@@ -29,16 +42,10 @@ export default function MeusLeiloes() {
 
   const mudar = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
 
-  // Quanto vale, nesta unidade, o limite de uma semana
-  const maximo = DURACAO_MAXIMA_MINUTOS / UNIDADES[form.duracaoUnidade];
-
-  // Ao trocar de unidade, 30 minutos não podem virar 30 dias: o valor é
-  // encurtado ao máximo permitido pela unidade nova.
-  function mudarUnidade(evento) {
-    const duracaoUnidade = evento.target.value;
-    const limite = DURACAO_MAXIMA_MINUTOS / UNIDADES[duracaoUnidade];
-    setForm({ ...form, duracaoUnidade, duracaoValor: Math.min(Number(form.duracaoValor) || 1, limite) });
-  }
+  // O que vai para a API: a soma dos três campos, em minutos
+  const duracaoMinutos =
+    (Number(form.dias) || 0) * 1440 + (Number(form.horas) || 0) * 60 + (Number(form.minutos) || 0);
+  const duracaoValida = duracaoMinutos >= 1 && duracaoMinutos <= DURACAO_MAXIMA_MINUTOS;
 
   async function escolherImagem(evento) {
     const ficheiro = evento.target.files?.[0];
@@ -54,13 +61,16 @@ export default function MeusLeiloes() {
   async function submeter(evento) {
     evento.preventDefault();
     try {
-      const { duracaoValor, duracaoUnidade, ...resto } = form;
+      // Os campos vão um a um para ficar à vista o que a API recebe: os três
+      // campos da duração não viajam, só a soma em minutos.
       await api.post('/auctions', {
-        ...resto,
+        lote: form.lote,
+        descricao: form.descricao,
+        imagem: form.imagem,
         precoBase: Number(form.precoBase),
         incremento: Number(form.incremento),
         minutosAteComecar: Number(form.minutosAteComecar),
-        duracaoMinutos: Number(duracaoValor) * UNIDADES[duracaoUnidade],
+        duracaoMinutos,
       });
       sucesso(`Leilão "${form.lote}" agendado para daqui a ${form.minutosAteComecar} minutos.`);
       setForm(VAZIO);
@@ -90,7 +100,7 @@ export default function MeusLeiloes() {
         <h2 className="h6">Agendar leilão</h2>
 
         <form onSubmit={submeter} className="row g-3">
-          <div className="col-12 col-md-3">
+          <div className="col-12 col-md-5">
             <label className="form-label small mb-1" htmlFor="lote">Lote</label>
             <input id="lote" className="form-control" required placeholder="Ex.: Lote de 50 kg de kiwi" value={form.lote} onChange={mudar('lote')} />
           </div>
@@ -102,36 +112,29 @@ export default function MeusLeiloes() {
             <label className="form-label small mb-1" htmlFor="incremento">Incremento (€)</label>
             <input id="incremento" type="number" min="1" step="1" className="form-control" required value={form.incremento} onChange={mudar('incremento')} />
           </div>
-          <div className="col-6 col-md-2">
+          <div className="col-12 col-md-3">
             <label className="form-label small mb-1" htmlFor="comeca">Começa daqui a (min)</label>
             <input id="comeca" type="number" min="3" max="60" className="form-control" required value={form.minutosAteComecar} onChange={mudar('minutosAteComecar')} />
             <small className="text-black-50">entre 3 e 60</small>
           </div>
-          <div className="col-12 col-md-3">
-            <label className="form-label small mb-1" htmlFor="duracao">Duração</label>
+          <div className="col-12 col-md-6">
+            <label className="form-label small mb-1" htmlFor="duracao-dias">Duração</label>
             <div className="input-group">
-              <input
-                id="duracao"
-                type="number"
-                min="1"
-                max={maximo}
-                className="form-control"
-                required
-                value={form.duracaoValor}
-                onChange={mudar('duracaoValor')}
-              />
-              <select
-                className="form-select"
-                aria-label="Unidade da duração"
-                value={form.duracaoUnidade}
-                onChange={mudarUnidade}
-              >
-                <option value="minutos">minutos</option>
-                <option value="horas">horas</option>
-                <option value="dias">dias</option>
-              </select>
+              <input id="duracao-dias" type="number" min="0" max="7" className="form-control"
+                value={form.dias} onChange={mudar('dias')} aria-label="Dias" />
+              <span className="input-group-text px-2">dias</span>
+              <input id="duracao-horas" type="number" min="0" max="23" className="form-control"
+                value={form.horas} onChange={mudar('horas')} aria-label="Horas" />
+              <span className="input-group-text px-2">horas</span>
+              <input id="duracao-minutos" type="number" min="0" max="59" className="form-control"
+                value={form.minutos} onChange={mudar('minutos')} aria-label="Minutos" />
+              <span className="input-group-text px-2">min</span>
             </div>
-            <small className="text-black-50">no máximo uma semana</small>
+            <small className={duracaoValida ? 'text-black-50' : 'text-danger'}>
+              {duracaoValida
+                ? `O leilão dura ${emPalavras(duracaoMinutos)}.`
+                : 'A duração tem de ser entre 1 minuto e uma semana.'}
+            </small>
           </div>
 
           <div className="col-12">
@@ -148,7 +151,7 @@ export default function MeusLeiloes() {
           </div>
 
           <div className="col-12">
-            <button className="btn btn-terracota">Agendar leilão</button>
+            <button className="btn btn-terracota" disabled={!duracaoValida}>Agendar leilão</button>
             <p className="small text-black-50 mt-2 mb-0">
               O leilão abre sozinho à hora marcada e fecha quando a duração acabar.
               O tempo até abrir dá aos compradores a hipótese de entrarem na sala a tempo.

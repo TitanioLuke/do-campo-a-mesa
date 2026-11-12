@@ -374,7 +374,7 @@ paths:
                   description: >-
                     Duração em minutos, de 1 minuto a 10080 (uma semana).
                     A API fala sempre em minutos; é o formulário do produtor que
-                    deixa escrever a duração em minutos, horas ou dias.
+                    deixa escrever a duração em dias, horas e minutos e envia a soma.
                   example: 5760
       responses:
         '201':
