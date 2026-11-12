@@ -16,14 +16,19 @@ function receberImagem(req, res, next) {
 }
 
 /**
- * POST /api/uploads — recebe uma imagem (campo `imagem`) e devolve o URL
- * público para guardar no produto ou no leilão.
+ * POST /api/uploads — recebe uma imagem (campo `imagem`) e devolve o CAMINHO
+ * para guardar no produto ou no leilão.
+ *
+ * Devolve `/uploads/ficheiro.png` e não o endereço completo de propósito: o
+ * endereço completo seria o desta máquina ("localhost" durante o
+ * desenvolvimento), e uma imagem guardada assim deixava de aparecer quando a
+ * aplicação fosse aberta a partir do telemóvel ou publicada noutro domínio.
+ * Guardando o caminho, é quem mostra a imagem que lhe junta o servidor.
  */
 router.post('/', autenticar('produtor', 'admin'), receberImagem, (req, res) => {
   if (!req.file) return res.status(400).json({ erro: 'Nenhuma imagem enviada' });
 
-  const url = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  res.status(201).json({ url });
+  res.status(201).json({ url: `/uploads/${req.file.filename}` });
 });
 
 module.exports = router;

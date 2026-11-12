@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, dataPt, euros } from '../../servicos/api';
+import { api, dataPt, euros, imagemUrl } from '../../servicos/api';
 import { useAuth } from '../../contexto/AuthContext';
 import { useAvisos } from '../../contexto/AvisosContext';
 import { useListaLeiloes } from '../../hooks/useListaLeiloes';
@@ -213,7 +213,7 @@ export default function MeusLeiloes() {
             <input id="imagem" type="file" accept="image/*" className="form-control" onChange={escolherImagem} />
           </div>
           <div className="col-12 col-md-4 d-flex align-items-end">
-            {form.imagem && <img src={form.imagem} alt="Pré-visualização" style={{ height: 60, borderRadius: 8 }} />}
+            {form.imagem && <img src={imagemUrl(form.imagem)} alt="Pré-visualização" style={{ height: 60, borderRadius: 8 }} />}
           </div>
 
           <div className="col-12">

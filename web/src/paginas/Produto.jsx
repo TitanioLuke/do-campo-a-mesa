@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api, dataPt, euros } from '../servicos/api';
+import { api, dataPt, euros, imagemUrl } from '../servicos/api';
 import { useCarrinho } from '../contexto/CarrinhoContext';
 import { useAuth } from '../contexto/AuthContext';
 import { useAvisos } from '../contexto/AvisosContext';
@@ -45,7 +45,7 @@ export default function Produto() {
           <img
             className="img-fluid rounded w-100"
             style={{ aspectRatio: '4 / 3', objectFit: 'cover' }}
-            src={produto.imagem || '/sem-imagem.svg'}
+            src={imagemUrl(produto.imagem)}
             alt={produto.nome}
             onError={(e) => { e.currentTarget.src = '/sem-imagem.svg'; }}
           />

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { euros } from '../servicos/api';
+import { euros, imagemUrl } from '../servicos/api';
 import Contador from './Contador';
 
 /** Resumo de um leilão, usado nas listagens. Os três estados têm aspeto próprio. */
@@ -10,7 +10,7 @@ export default function CartaoLeilao({ leilao }) {
     <article className="cartao-produto">
       <img
         className="imagem"
-        src={leilao.imagem || '/sem-imagem.svg'}
+        src={imagemUrl(leilao.imagem)}
         alt={leilao.lote}
         onError={(e) => { e.currentTarget.src = '/sem-imagem.svg'; }}
       />

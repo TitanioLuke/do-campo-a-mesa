@@ -8,6 +8,24 @@
 // localhost como no telemóvel, onde "localhost" seria o próprio telemóvel.
 export const API_URL = import.meta.env.VITE_API_URL || `http://${location.hostname}:3000`;
 
+/**
+ * Endereço final de uma imagem.
+ *
+ * As imagens dos dados de exemplo são SVG embutidos (`data:`) e usam-se como
+ * estão. As que os produtores carregam ficam guardadas como caminho
+ * (`/uploads/…`) e é aqui que lhes é junto o servidor — por isso aparecem
+ * tanto em localhost como no telemóvel, que é outra máquina.
+ */
+export function imagemUrl(imagem) {
+  if (!imagem) return '/sem-imagem.svg';
+  if (imagem.startsWith('data:')) return imagem;
+
+  // Tira o servidor, caso venha um endereço completo guardado antes desta
+  // mudança, e volta a juntar o certo.
+  const caminho = imagem.replace(/^https?:\/\/[^/]+/, '');
+  return caminho.startsWith('/uploads/') ? `${API_URL}${caminho}` : imagem;
+}
+
 function token() {
   return localStorage.getItem('token');
 }

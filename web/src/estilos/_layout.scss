@@ -56,17 +56,67 @@ a { text-decoration: none; }
     gap: 0.5rem;
   }
 
+  // Mobile First: no telemóvel o menu é uma lista vertical que se abre por
+  // baixo da barra. A página atual marca-se com um risco à ESQUERDA — o risco
+  // por baixo, que faz sentido numa barra horizontal, aqui atravessaria o ecrã
+  // de lado a lado e parecia um separador.
   .nav-link {
     color: rgba(255, 255, 255, 0.85);
     font-weight: 500;
-    padding: 0.5rem 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-left: 3px solid transparent;
+    border-radius: 0 v.$raio v.$raio 0;
 
     &:hover { color: v.$branco; }
     &.ativo {
       color: v.$branco;
-      border-bottom: 2px solid v.$dourado;
+      border-left-color: v.$dourado;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    @include m.a-partir-de(md) {
+      padding: 0.5rem 0.75rem;
+      border-left: 0;
+      border-radius: 0;
+
+      &.ativo {
+        background: none;
+        border-bottom: 2px solid v.$dourado;
+      }
     }
   }
+
+  // Os dois grupos do menu — navegação e conta — ficam separados por um risco
+  // enquanto estão empilhados; lado a lado não precisam dele.
+  .navbar-nav + .navbar-nav {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+
+    @include m.a-partir-de(md) {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: 0;
+    }
+  }
+
+  .navbar-collapse {
+    padding-bottom: 0.5rem;
+
+    // Entrar, Registar e Sair ocupam a largura toda: são os alvos de toque
+    // mais importantes do menu.
+    .btn {
+      width: 100%;
+      margin-top: 0.25rem;
+    }
+
+    @include m.a-partir-de(md) {
+      padding-bottom: 0;
+      .btn { width: auto; margin-top: 0; }
+    }
+  }
+
+  .navbar-toggler:focus { box-shadow: none; }
 }
 
 // ---------- Rodapé ----------

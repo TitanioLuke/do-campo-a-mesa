@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { euros } from '../servicos/api';
+import { euros, imagemUrl } from '../servicos/api';
 import Estrelas from './Estrelas';
 
 /** Cartão reutilizável do catálogo e da página do produtor. */
@@ -11,7 +11,7 @@ export default function CartaoProduto({ produto, onAdicionar }) {
       <Link to={`/produtos/${produto._id}`}>
         <img
           className="imagem"
-          src={produto.imagem || '/sem-imagem.svg'}
+          src={imagemUrl(produto.imagem)}
           alt={produto.nome}
           onError={(e) => { e.currentTarget.src = '/sem-imagem.svg'; }}
         />

@@ -982,7 +982,15 @@ Cloud Storage). **Esta aplicação não o faz**, e vale a pena ser explícito so
 significa.
 
 As imagens são recebidas pelo Multer, gravadas em `api/uploads/` e servidas pelo Express
-(`app.use('/uploads', express.static(...))`). Em desenvolvimento funciona bem. No plano gratuito
+(`app.use('/uploads', express.static(...))`).
+
+O `POST /api/uploads` devolve o **caminho** (`/uploads/ficheiro.png`) e não o endereço
+completo. A primeira versão devolvia o endereço completo e isso partia-se assim que a
+aplicação saía do computador: o endereço gravado era `http://localhost:3000/...`, e aberto
+no telemóvel o `localhost` passava a ser o próprio telemóvel — a imagem desaparecia.
+Guardando o caminho, é quem mostra a imagem que lhe junta o servidor (`imagemUrl()`, em
+`web/src/servicos/api.js`), e a mesma imagem funciona em localhost, na rede local e na
+versão publicada. Em desenvolvimento funciona bem. No plano gratuito
 do Render o disco é **efémero**: é recriado a cada publicação e a cada despertar do serviço, por
 isso uma fotografia carregada por um produtor desaparece mais tarde ou mais cedo.
 

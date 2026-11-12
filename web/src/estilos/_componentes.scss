@@ -90,6 +90,7 @@
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
   border: 1px solid currentColor;
+  white-space: nowrap; // "1 na sala" não parte ao meio no telemóvel
 }
 .etiqueta-bio { color: v.$verde; background: v.$verde-muito-claro; }
 .etiqueta-epoca { color: v.$terracota; background: #fbf0ea; }
