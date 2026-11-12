@@ -80,9 +80,6 @@ export default function PerfilComprador() {
               <div className="mb-3">
                 <label className="form-label small mb-1" htmlFor="nome">Nome</label>
                 <input id="nome" className="form-control" required value={dados.nome} onChange={mudar('nome')} />
-                <small className="text-black-50">
-                  É o nome que aparece nas avaliações que escrever e nas salas de leilão.
-                </small>
               </div>
 
               <div className="mb-3">
@@ -105,9 +102,6 @@ export default function PerfilComprador() {
                   value={dados.morada}
                   onChange={mudar('morada')}
                 />
-                <small className="text-black-50">
-                  Aparece já preenchida no carrinho quando escolher entrega ao domicílio.
-                </small>
               </div>
 
               <p className="small text-black-50">
