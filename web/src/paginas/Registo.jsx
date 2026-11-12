@@ -106,10 +106,6 @@ export default function Registo() {
                     value={dados.morada}
                     onChange={mudar('morada')}
                   />
-                  <small className="text-black-50">
-                    Fica guardada no seu perfil e aparece já preenchida quando escolher entrega ao domicílio.
-                    Pode sempre usar outra morada numa encomenda.
-                  </small>
                 </div>
               )}
 
