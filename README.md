@@ -1092,6 +1092,20 @@ ficheiro e mais nada — o resto da aplicação continua a receber um URL e não
   mesmo problema dos leilões. A retirada do stock é feita com
   `findOneAndUpdate({ _id, stock: { $gte: quantidade } }, { $inc: { stock: -quantidade } })`,
   que só grava se ainda houver stock.
+
+  Isso resolvia uma linha de cada vez, mas não o carrinho inteiro: o stock é retirado produto
+  a produto, e numa encomenda com **vários produtos** a segunda linha podia falhar depois de a
+  primeira já ter sido descontada. Nenhuma encomenda era criada e as unidades da primeira
+  linha desapareciam da plataforma. Agora as retiradas vão sendo registadas e, se alguma
+  linha falhar — ou se a criação da encomenda falhar —, são **devolvidas** com um `$inc`
+  positivo antes de responder, por isso ou a encomenda se faz toda ou o stock fica como
+  estava. É a alternativa simples às transações do MongoDB, que obrigariam a sessões e a um
+  *replica set*.
+
+  Comprovado com dois compradores a enviar, ao mesmo tempo, um carrinho com dois produtos em
+  que o segundo tinha só uma unidade: antes da correção, o primeiro produto descia **duas**
+  unidades e só se vendia uma; depois, desce uma e a recusada recebe
+  `"<produto>" esgotou-se entretanto`.
 - **Duas ligações WebSocket por utilizador.** Na primeira versão, o hook `useLeilao` abria uma
   ligação própria, além da do contexto global — o que fazia o utilizador entrar duas vezes na
   sala pessoal e receber cada notificação a dobrar. Passou a existir **uma só ligação**, criada
