@@ -326,7 +326,8 @@ async function seed() {
   // ========================= LEILÕES =========================
   // Os ativos duram vários dias, para não ser preciso repor os dados. Há ainda
   // um agendado, que abre sozinho daqui a poucos minutos — serve para mostrar
-  // na demonstração a sala a abrir em direto.
+  // na demonstração a sala a abrir em direto —, e um relâmpago, que termina
+  // daqui a 3 minutos, para se ver o prolongamento automático sem esperar.
 
   const [kiwi, mel, alvarinho, batata, queijo] = await inserir(Auction, [
     {
@@ -377,6 +378,17 @@ async function seed() {
       licitacaoAtual: { valor: 40, comprador: null, nome: '' },
       comecaEm: daquiAMinutos(6), terminaEm: daquiAMinutos(6 + 60),
       estado: 'agendado', data: haDias(0),
+    },
+    {
+      // A Queijaria é um produtor validado: o Pomar está pendente e os seus
+      // lotes não devem aparecer na plataforma.
+      produtor: queijaria._id, lote: 'Lote relâmpago de 10 queijos frescos',
+      descricao: 'Leilão curto, termina daqui a minutos. Licite perto do fim para ver o leilão prolongar-se.',
+      imagem: criarImagem('Lote de Queijo', 'Queijo'),
+      precoBase: 50, incremento: 5,
+      licitacaoAtual: { valor: 50, comprador: null, nome: '' },
+      comecaEm: daquiAMinutos(-1), terminaEm: daquiAMinutos(3),
+      estado: 'ativo', data: haDias(0),
     },
   ]);
 

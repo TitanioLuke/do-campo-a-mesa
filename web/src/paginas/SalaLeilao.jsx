@@ -18,7 +18,7 @@ export default function SalaLeilao() {
   const { id } = useParams();
   const { utilizador, papel, temSessao } = useAuth();
   const { erro: avisarErro } = useAvisos();
-  const { leilao, historico, participantes, erro, licitar, minimo } = useLeilao(id);
+  const { leilao, historico, participantes, erro, licitar, minimo, prolongado } = useLeilao(id);
 
   const [valor, setValor] = useState('');
 
@@ -93,6 +93,16 @@ export default function SalaLeilao() {
                 </div>
               </div>
             </div>
+
+            {/* Aparece assim que uma licitação empurra o fim: sem isto, ver a
+                contagem SUBIR parece um erro a quem está na sala. */}
+            {aDecorrer && prolongado && (
+              <div className="alert alert-warning py-2 mb-3 small">
+                Leilão <strong>prolongado</strong>: cada licitação feita nos últimos
+                30 segundos empurra o fim meio minuto, para ninguém ganhar à última
+                sem os outros terem tempo de responder.
+              </div>
+            )}
 
             {agendado && (
               <div className="alert alert-warning mb-0">

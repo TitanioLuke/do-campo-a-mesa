@@ -97,8 +97,19 @@ Na **segunda janela** (anónima), entrar como **quinta@dcm.pt** → Painel → E
 > aplica de forma atómica. A segunda já não encontra o documento como esperava e é
 > recusada — sem nunca escrever."
 
-7. **Opcional, se sobrar tempo:** abrir uma terceira janela na lista de leilões, sem
-   sessão, e mostrar que o valor também muda lá
+**Por fim, o prolongamento (o leilão relâmpago criado pelo `seed`):**
+
+7. Entrar no **Lote relâmpago de 10 queijos frescos** com as duas janelas
+8. Esperar que a contagem desça abaixo de **00:30** e licitar numa das janelas
+9. **Apontar para a contagem**: salta para 00:30 nas duas janelas e aparece o aviso amarelo
+
+> "Com um fim fixo, bastava esperar pelos últimos segundos e licitar quando já ninguém
+> conseguia responder. Agora, uma licitação feita nos últimos 30 segundos empurra o fim meio
+> minuto: o leilão só fecha depois de meio minuto sem licitações. E isso vai no mesmo
+> `findOneAndUpdate` da licitação, com o `$max` do MongoDB — não é uma segunda escrita."
+
+10. **Opcional, se sobrar tempo:** abrir uma terceira janela na lista de leilões, sem
+    sessão, e mostrar que o valor também muda lá
 
 ---
 

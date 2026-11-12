@@ -5,6 +5,12 @@ const Bid = require('../models/Bid');
 // De quanto em quanto tempo o servidor verifica se há leilões para abrir ou fechar
 const INTERVALO_RELOGIO = 3000;
 
+// Prolongamento automático do leilão ("soft close"). Uma licitação aceite
+// quando falta menos do que isto empurra o fim para daqui a este tempo, para
+// que ninguém ganhe licitando no último instante sem dar aos outros hipótese
+// de responder: o leilão só fecha depois de meio minuto sem licitações.
+const PROLONGAMENTO_MS = 30 * 1000;
+
 // Sala onde estão todos os clientes ligados, usada para manter as LISTAS de
 // leilões atualizadas em qualquer página, não só dentro de uma sala de leilão.
 const SALAO = 'leiloes';
@@ -76,6 +82,9 @@ module.exports = function configurarSockets(io) {
      *
      * O filtro exige `estado: 'ativo'`, o que também impede licitações num
      * leilão que ainda não abriu.
+     *
+     * A mesma escrita trata do prolongamento automático: uma licitação feita
+     * perto do fim empurra o fecho (ver PROLONGAMENTO_MS).
      */
     socket.on('licitar', async ({ leilaoId, valor }) => {
       if (!socket.user) return socket.emit('recusada', 'Inicie sessão para licitar');
@@ -85,15 +94,25 @@ module.exports = function configurarSockets(io) {
       const montante = Number(valor);
       if (!Number.isFinite(montante)) return socket.emit('recusada', 'Valor inválido');
 
+      const agora = new Date();
+      const fimProlongado = new Date(agora.getTime() + PROLONGAMENTO_MS);
+
       const leilao = await Auction.findOneAndUpdate(
         {
           _id: leilaoId,
           estado: 'ativo',
-          terminaEm: { $gt: new Date() },
+          terminaEm: { $gt: agora },
           // valor >= licitacaoAtual.valor + incremento, avaliado no servidor
           $expr: { $gte: [montante, { $add: ['$licitacaoAtual.valor', '$incremento'] }] },
         },
-        { licitacaoAtual: { valor: montante, comprador: socket.user.id, nome: socket.user.nome } },
+        {
+          $set: { licitacaoAtual: { valor: montante, comprador: socket.user.id, nome: socket.user.nome } },
+          // O `$max` do MongoDB só grava se o valor for MAIOR do que o que lá
+          // está. Se ainda faltar mais de meio minuto, o fim fica na mesma; se
+          // faltar menos, passa a ser daqui a meio minuto. É uma única escrita,
+          // logo o prolongamento é tão atómico como a própria licitação.
+          $max: { terminaEm: fimProlongado },
+        },
         { new: true }
       );
 
@@ -118,8 +137,15 @@ module.exports = function configurarSockets(io) {
         valor: montante,
       });
 
+      // Se o fim gravado é exatamente o que propusemos, foi o `$max` que o
+      // aceitou: esta licitação prolongou o leilão. A sala precisa de saber,
+      // para explicar a quem lá está porque é que a contagem subiu.
+      const prolongado = leilao.terminaEm.getTime() === fimProlongado.getTime();
+
       io.to(`leilao:${leilaoId}`).emit('nova-licitacao', {
         licitacaoAtual: leilao.licitacaoAtual,
+        terminaEm: leilao.terminaEm,
+        prolongado,
         licitacao,
       });
 
@@ -127,6 +153,7 @@ module.exports = function configurarSockets(io) {
       io.to(SALAO).emit('leilao-atualizado', {
         _id: String(leilao._id),
         licitacaoAtual: leilao.licitacaoAtual,
+        terminaEm: leilao.terminaEm,
         estado: leilao.estado,
       });
     });

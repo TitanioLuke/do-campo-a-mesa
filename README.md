@@ -86,8 +86,10 @@ cd api && npm run seed
 
 **Só é preciso correr uma vez.** O comando apaga tudo o que estiver na base de dados e
 volta a criá-la de raiz, com 12 utilizadores, 28 produtos, 16 encomendas espalhadas pelas
-últimas seis semanas, 18 avaliações e 5 leilões (3 a decorrer, que duram vários dias, e 2
-já terminados com histórico de licitações). A partir daí os dados ficam guardados no
+últimas seis semanas, 18 avaliações e 7 leilões: 3 a decorrer que duram vários dias, 2 já
+terminados com histórico de licitações, 1 agendado que abre sozinho daqui a poucos minutos
+e 1 relâmpago que termina daqui a 3 minutos, para se ver o prolongamento automático
+(secção 14.8) sem ter de esperar. A partir daí os dados ficam guardados no
 MongoDB e persistem entre arranques — só voltar a correr este comando é que os apaga.
 
 Arrancar a API:
@@ -184,7 +186,8 @@ ainda não foi validado: é o que permite demonstrar a aprovação no painel do 
 - Denunciar avaliações para moderação.
 - Entrar na sala de um leilão e licitar: contagem decrescente, número de participantes,
   histórico de licitações, atalhos que licitam logo o valor seguinte e validação do
-  mínimo no servidor.
+  mínimo no servidor. Licitar nos últimos 30 segundos **prolonga** o leilão, para
+  ninguém ganhar à última sem dar aos outros tempo de resposta (secção 14.8).
 - **Perfil próprio** onde altera nome, telefone e morada, com um resumo das compras
   (encomendas, produtores a quem comprou e total gasto).
 
@@ -726,15 +729,21 @@ A solução é não ler-e-depois-escrever. Toda a validação está **dentro do 
 `findOneAndUpdate`, por isso é o MongoDB que a aplica, de forma atómica, sobre o documento:
 
 ```js
+const agora = new Date();
+const fimProlongado = new Date(agora.getTime() + PROLONGAMENTO_MS); // 30 segundos
+
 const leilao = await Auction.findOneAndUpdate(
   {
     _id: leilaoId,
     estado: 'ativo',
-    terminaEm: { $gt: new Date() },
+    terminaEm: { $gt: agora },
     // valor >= licitacaoAtual.valor + incremento, avaliado no servidor
     $expr: { $gte: [montante, { $add: ['$licitacaoAtual.valor', '$incremento'] }] },
   },
-  { licitacaoAtual: { valor: montante, comprador: socket.user.id, nome: socket.user.nome } },
+  {
+    $set: { licitacaoAtual: { valor: montante, comprador: socket.user.id, nome: socket.user.nome } },
+    $max: { terminaEm: fimProlongado },   // prolongamento automático, secção 14.8
+  },
   { new: true }
 );
 
@@ -855,7 +864,71 @@ Um `setInterval` de 3 segundos faz as duas passagens de estado:
 Em qualquer dos casos manda também `leiloes-mudaram` à sala `leiloes`, porque abrir ou
 fechar muda a que listas o leilão pertence.
 
-### 14.8. Notificações de encomendas
+### 14.8. Prolongamento automático: ninguém ganha no último segundo
+
+Com um fim fixo, a melhor jogada para um comprador não é licitar o que o lote vale: é passar
+o leilão em silêncio e atirar o lance nos últimos segundos, quando já ninguém consegue
+responder. Chama-se *sniping*, e faz com que ganhe quem tem melhor ligação à internet, não
+quem ofereceu mais.
+
+A regra passou a ser: **um leilão nunca fecha com uma licitação feita há menos de 30
+segundos**. Licitar perto do fim empurra o fim para meio minuto depois dessa licitação, e o
+leilão só fecha quando passarem 30 segundos sem ninguém licitar.
+
+O que torna isto simples é um operador do MongoDB, o `$max`, que **só grava se o valor novo
+for maior do que o que lá está**:
+
+```js
+const agora = new Date();
+const fimProlongado = new Date(agora.getTime() + PROLONGAMENTO_MS); // 30 segundos
+
+await Auction.findOneAndUpdate(
+  filtro,                                  // o mesmo filtro da secção 14.2
+  {
+    $set: { licitacaoAtual: { /* ... */ } },
+    $max: { terminaEm: fimProlongado },
+  },
+  { new: true }
+);
+```
+
+Como `terminaEm` é uma data, "maior" quer dizer "mais tarde":
+
+| Quanto falta para o fim | `fimProlongado` é mais tarde? | Resultado |
+| --- | --- | --- |
+| 2 horas | não | o fim fica como estava |
+| 40 segundos | não | o fim fica como estava |
+| 5 segundos | sim | o fim passa a ser daqui a 30 segundos |
+
+E repare-se que **não é uma segunda escrita**: o prolongamento vai no mesmo
+`findOneAndUpdate` que valida e grava a licitação, por isso é tão atómico como ela. Se
+fossem duas escritas, havia uma janela em que o relógio do servidor (14.7) podia fechar o
+leilão entre aceitar a licitação e empurrar o fim.
+
+Como o `$max` pode ter gravado ou não, o servidor compara o que ficou no documento com o que
+propôs e diz à sala qual foi o caso:
+
+```js
+const prolongado = leilao.terminaEm.getTime() === fimProlongado.getTime();
+
+io.to(`leilao:${leilaoId}`).emit('nova-licitacao', {
+  licitacaoAtual: leilao.licitacaoAtual, terminaEm: leilao.terminaEm, prolongado, licitacao,
+});
+```
+
+No cliente não foi preciso temporizador nenhum: o `Contador` já tem o `terminaEm` nas
+dependências do seu `useEffect`, por isso basta o hook guardar a data nova para a contagem
+reiniciar sozinha em todos os ecrãs. O `prolongado` serve só para mostrar um aviso — ver a
+contagem **subir** sem explicação parece um erro a quem está na sala. O evento
+`leilao-atualizado` leva o mesmo `terminaEm`, para as listas acompanharem a sala.
+
+Testado com dois compradores ligados ao mesmo leilão: uma licitação a 10 minutos do fim não
+mexeu na data e o evento veio com `prolongado: false`; uma licitação a 5 segundos do fim
+empurrou o fim exatamente 30 segundos e os dois clientes receberam a mesma data nova; uma
+segunda licitação dentro da janela voltou a empurrar; e, sem mais licitações, o leilão fechou
+30 segundos depois da última, com o vencedor e o valor certos.
+
+### 14.9. Notificações de encomendas
 
 Quando o produtor muda o estado de uma encomenda, a rota REST usa o `io` para avisar o comprador
 na sua sala pessoal:

@@ -33,9 +33,11 @@ export function useListaLeiloes(parametros = '') {
   useEffect(() => {
     if (!socket) return;
 
-    const aoLicitar = ({ _id, licitacaoAtual, estado }) =>
+    // Vem também o `terminaEm`: uma licitação perto do fim prolonga o leilão,
+    // e a contagem das listas tem de acompanhar a da sala.
+    const aoLicitar = ({ _id, licitacaoAtual, terminaEm, estado }) =>
       setLeiloes((atuais) =>
-        atuais.map((l) => (l._id === _id ? { ...l, licitacaoAtual, estado } : l))
+        atuais.map((l) => (l._id === _id ? { ...l, licitacaoAtual, terminaEm, estado } : l))
       );
 
     socket.on('leilao-atualizado', aoLicitar);

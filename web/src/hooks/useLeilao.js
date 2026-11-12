@@ -13,17 +13,25 @@ export function useLeilao(id) {
   const [historico, setHistorico] = useState([]);
   const [participantes, setParticipantes] = useState(0);
   const [erro, setErro] = useState('');
+  // O leilão já foi prolongado por uma licitação feita perto do fim
+  const [prolongado, setProlongado] = useState(false);
 
   useEffect(() => {
     if (!socket || !id) return;
 
     socket.emit('entrar', id);
 
-    const aoEstado = (dados) => setLeilao(dados);
+    const aoEstado = (dados) => {
+      setLeilao(dados);
+      setProlongado(false);
+    };
     const aoHistorico = (lista) => setHistorico(lista);
-    const aoNovaLicitacao = ({ licitacaoAtual, licitacao }) => {
-      setLeilao((atual) => (atual ? { ...atual, licitacaoAtual } : atual));
+    // O servidor manda sempre o fim do leilão com a licitação, porque pode
+    // tê-lo empurrado: é assim que a contagem sobe nos ecrãs de toda a gente.
+    const aoNovaLicitacao = ({ licitacaoAtual, terminaEm, prolongado: esticou, licitacao }) => {
+      setLeilao((atual) => (atual ? { ...atual, licitacaoAtual, terminaEm } : atual));
       setHistorico((atual) => [licitacao, ...atual].slice(0, 20));
+      if (esticou) setProlongado(true);
       setErro('');
     };
     const aoPresenca = (n) => setParticipantes(n);
@@ -60,5 +68,5 @@ export function useLeilao(id) {
   // Valor mínimo da próxima licitação, calculado a partir do estado do servidor
   const minimo = leilao ? leilao.licitacaoAtual.valor + leilao.incremento : 0;
 
-  return { leilao, historico, participantes, erro, licitar, minimo };
+  return { leilao, historico, participantes, erro, licitar, minimo, prolongado };
 }
