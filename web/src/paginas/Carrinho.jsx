@@ -4,6 +4,7 @@ import { api, euros } from '../servicos/api';
 import { useCarrinho } from '../contexto/CarrinhoContext';
 import { useAuth } from '../contexto/AuthContext';
 import { useAvisos } from '../contexto/AvisosContext';
+import ModalConfirmar from '../componentes/ModalConfirmar';
 
 export default function Carrinho() {
   const { linhas, alterarQuantidade, remover, limpar, total } = useCarrinho();
@@ -17,6 +18,9 @@ export default function Carrinho() {
   const moradaEscolhida = origemMorada === 'registo' && moradaDoRegisto ? moradaDoRegisto : entrega.morada;
   const { sucesso, erro } = useAvisos();
   const [aEnviar, setAEnviar] = useState(false);
+  // Esvaziar o carrinho apaga o trabalho de escolher os produtos, e um clique
+  // ao lado do "Finalizar encomenda" chega para o fazer sem querer.
+  const [aEsvaziar, setAEsvaziar] = useState(false);
 
   async function finalizar() {
     setAEnviar(true);
@@ -103,7 +107,9 @@ export default function Carrinho() {
               </tbody>
             </table>
 
-            <button className="btn btn-sm btn-outline-secondary mt-3" onClick={limpar}>Esvaziar carrinho</button>
+            <button className="btn btn-sm btn-outline-secondary mt-3" onClick={() => setAEsvaziar(true)}>
+              Esvaziar carrinho
+            </button>
           </div>
         </div>
 
@@ -212,6 +218,16 @@ export default function Carrinho() {
           </div>
         </div>
       </div>
+
+      {aEsvaziar && (
+        <ModalConfirmar
+          titulo="Esvaziar carrinho"
+          mensagem={`Tira do carrinho ${linhas.length === 1 ? 'o único produto' : `os ${linhas.length} produtos`} que escolheu. Nada é encomendado e pode voltar a juntá-los.`}
+          textoAcao="Esvaziar"
+          aoConfirmar={() => { limpar(); setAEsvaziar(false); }}
+          aoFechar={() => setAEsvaziar(false)}
+        />
+      )}
     </>
   );
 }

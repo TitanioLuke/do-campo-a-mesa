@@ -4,6 +4,7 @@ import { useAuth } from '../../contexto/AuthContext';
 import { useAvisos } from '../../contexto/AvisosContext';
 import NavProdutor from './NavProdutor';
 import ModalConfirmar from '../../componentes/ModalConfirmar';
+import { vazio } from '../../servicos/validacao';
 
 const CATEGORIAS = ['Hortícolas', 'Fruta', 'Mel', 'Vinho', 'Queijo', 'Outros'];
 const UNIDADES = ['kg', 'un', 'L', 'dz', 'cx'];
@@ -24,6 +25,7 @@ export default function MeusProdutos() {
   const [form, setForm] = useState(VAZIO);
   const [aEditar, setAEditar] = useState(null); // _id do produto em edição
   const [aApagar, setAApagar] = useState(null); // produto à espera de confirmação
+  const [tentou, setTentou] = useState(false);
   const { sucesso, erro } = useAvisos();
 
   const carregar = () =>
@@ -45,8 +47,22 @@ export default function MeusProdutos() {
     }
   }
 
+  // Validação própria, por baixo de cada campo (ver servicos/validacao.js)
+  const problemas = {
+    nome: vazio(form.nome) ? 'Escreva o nome do produto.' : '',
+    preco:
+      vazio(form.preco) ? 'Indique o preço.'
+        : Number(form.preco) < 0 ? 'O preço não pode ser negativo.'
+        : '',
+  };
+  const formularioValido = !Object.values(problemas).some(Boolean);
+  const classe = (problema) => `form-control${tentou && problema ? ' is-invalid' : ''}`;
+
   async function submeter(evento) {
     evento.preventDefault();
+    setTentou(true);
+    if (!formularioValido) return erro('Há campos por corrigir no formulário.');
+
     const corpo = { ...form, preco: Number(form.preco), stock: Number(form.stock || 0) };
 
     try {
@@ -59,6 +75,7 @@ export default function MeusProdutos() {
       }
       setForm(VAZIO);
       setAEditar(null);
+      setTentou(false);
       carregar();
     } catch (e) {
       erro(e.message);
@@ -67,6 +84,7 @@ export default function MeusProdutos() {
 
   function editar(produto) {
     setAEditar(produto._id);
+    setTentou(false);
     setForm({
       nome: produto.nome, descricao: produto.descricao || '', categoria: produto.categoria,
       preco: produto.preco, unidade: produto.unidade, stock: produto.stock,
@@ -94,10 +112,11 @@ export default function MeusProdutos() {
       <div className="painel mb-4">
         <h2 className="h6">{aEditar ? 'Editar produto' : 'Novo produto'}</h2>
 
-        <form onSubmit={submeter} className="row g-3">
+        <form onSubmit={submeter} className="row g-3" noValidate>
           <div className="col-12 col-md-6">
             <label className="form-label small mb-1" htmlFor="nome">Nome</label>
-            <input id="nome" className="form-control" required value={form.nome} onChange={mudar('nome')} />
+            <input id="nome" className={classe(problemas.nome)} required value={form.nome} onChange={mudar('nome')} />
+            {tentou && problemas.nome && <small className="text-danger">{problemas.nome}</small>}
           </div>
           <div className="col-6 col-md-3">
             <label className="form-label small mb-1" htmlFor="categoria">Categoria</label>
@@ -114,7 +133,8 @@ export default function MeusProdutos() {
 
           <div className="col-4 col-md-3">
             <label className="form-label small mb-1" htmlFor="preco">Preço (€)</label>
-            <input id="preco" type="number" step="0.01" min="0" className="form-control" required value={form.preco} onChange={mudar('preco')} />
+            <input id="preco" type="number" step="0.01" min="0" className={classe(problemas.preco)} required value={form.preco} onChange={mudar('preco')} />
+            {tentou && problemas.preco && <small className="text-danger">{problemas.preco}</small>}
           </div>
           <div className="col-4 col-md-3">
             <label className="form-label small mb-1" htmlFor="unidade">Unidade</label>

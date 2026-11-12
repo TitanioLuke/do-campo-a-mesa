@@ -241,6 +241,14 @@
 
   input { padding-right: 2.75rem; }
 
+  // O Bootstrap põe um ícone de erro à direita dos campos inválidos, que aqui
+  // ficava por baixo do botão do olho. A moldura vermelha chega para marcar o
+  // campo, e a mensagem por baixo diz o que está errado.
+  input.is-invalid {
+    background-image: none;
+    padding-right: 2.75rem;
+  }
+
   button {
     position: absolute;
     top: 0;

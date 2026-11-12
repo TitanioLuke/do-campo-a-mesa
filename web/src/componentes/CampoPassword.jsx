@@ -26,7 +26,7 @@ function Olho({ aberto }) {
  * O botão só muda o `type` do input entre `password` e `text` — o valor
  * continua a ser o mesmo estado do formulário.
  */
-export default function CampoPassword({ id, valor, aoMudar, ...resto }) {
+export default function CampoPassword({ id, valor, aoMudar, className = 'form-control', ...resto }) {
   const [visivel, setVisivel] = useState(false);
 
   return (
@@ -34,7 +34,7 @@ export default function CampoPassword({ id, valor, aoMudar, ...resto }) {
       <input
         id={id}
         type={visivel ? 'text' : 'password'}
-        className="form-control"
+        className={className}
         value={valor}
         onChange={(evento) => aoMudar(evento.target.value)}
         {...resto}

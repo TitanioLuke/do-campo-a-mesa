@@ -7,6 +7,8 @@ import { useListaLeiloes } from '../../hooks/useListaLeiloes';
 import NavProdutor from './NavProdutor';
 import Contador from '../../componentes/Contador';
 import ModalConfirmar from '../../componentes/ModalConfirmar';
+import Modal from '../../componentes/Modal';
+import { vazio } from '../../servicos/validacao';
 
 // A duração escreve-se em três campos — dias, horas e minutos — e a API recebe
 // a soma em minutos. Três campos em vez de um valor e uma unidade porque as
@@ -76,6 +78,11 @@ export default function MeusLeiloes() {
     return () => clearInterval(intervalo);
   }, []);
   const [aApagar, setAApagar] = useState(null);
+  // "tentou" só fica verdadeiro depois de o produtor carregar em "Agendar":
+  // sem isto, o formulário abria logo todo vermelho sem ninguém ter feito nada.
+  const [tentou, setTentou] = useState(false);
+  const [aConfirmar, setAConfirmar] = useState(false);
+  const [aEnviar, setAEnviar] = useState(false);
 
   const mudar = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
 
@@ -87,9 +94,28 @@ export default function MeusLeiloes() {
   // A hora escolhida, no dia de hoje. O servidor recebe o instante completo.
   const comecaEm = new Date(agora);
   comecaEm.setHours(Number(form.hora), Number(form.minuto), 0, 0);
+  const terminaEm = new Date(comecaEm.getTime() + duracaoMinutos * 60 * 1000);
   const faltam = Math.round((comecaEm.getTime() - agora) / 60000);
   const horaValida = comecaEm.getTime() - agora >= 60 * 1000;
   const foraDeHoras = new Date(agora).getHours() >= HORA_ABERTURA_MAX;
+
+  // A validação do formulário, campo a campo. É calculada a cada render a
+  // partir do que lá está — não é estado — e cada mensagem aparece por baixo do
+  // seu campo. Substitui o aviso do browser, que é uma caixa cinzenta e vem em
+  // inglês ("Please fill out this field") mesmo numa página em português.
+  const problemas = {
+    lote: vazio(form.lote) ? 'Escreva o nome do lote.' : '',
+    precoBase:
+      vazio(form.precoBase) ? 'Indique o preço base.'
+        : Number(form.precoBase) < 0 ? 'O preço base não pode ser negativo.'
+        : '',
+    incremento: Number(form.incremento) >= 1 ? '' : 'O incremento tem de ser pelo menos 1 €.',
+  };
+  const formularioValido =
+    !Object.values(problemas).some(Boolean) && duracaoValida && horaValida;
+
+  // A moldura vermelha só depois da primeira tentativa de submeter
+  const classe = (problema) => `form-control${tentou && problema ? ' is-invalid' : ''}`;
 
   // Às 18:00 em ponto fecha a janela, por isso essa hora só admite os minutos a 00.
   const minutosPossiveis = form.hora === String(HORA_ABERTURA_MAX) ? ['00'] : MINUTOS;
@@ -110,8 +136,21 @@ export default function MeusLeiloes() {
     }
   }
 
-  async function submeter(evento) {
+  /**
+   * Carregar em "Agendar leilão" não cria nada: valida e, se estiver tudo bem,
+   * abre a janela de confirmação. Agendar um leilão é um compromisso com os
+   * compradores — abre sozinho e qualquer um pode licitar —, por isso pede-se
+   * uma segunda decisão com o resumo à frente dos olhos.
+   */
+  function submeter(evento) {
     evento.preventDefault();
+    setTentou(true);
+    if (!formularioValido) return erro('Há campos por corrigir no formulário.');
+    setAConfirmar(true);
+  }
+
+  async function criar() {
+    setAEnviar(true);
     try {
       // Os campos vão um a um para ficar à vista o que a API recebe: os três
       // campos da duração não viajam, só a soma em minutos.
@@ -126,9 +165,16 @@ export default function MeusLeiloes() {
       });
       sucesso(`Leilão "${form.lote}" agendado para as ${form.hora}:${form.minuto}.`);
       setForm(formVazio());
+      setTentou(false);
+      setAConfirmar(false);
       recarregar();
     } catch (e) {
+      // O erro vem da API (por exemplo, a hora já ter passado enquanto o
+      // produtor confirmava): fecha-se a janela para ele poder corrigir.
+      setAConfirmar(false);
       erro(e.message);
+    } finally {
+      setAEnviar(false);
     }
   }
 
@@ -151,18 +197,30 @@ export default function MeusLeiloes() {
       <div className="painel mb-4">
         <h2 className="h6">Agendar leilão</h2>
 
-        <form onSubmit={submeter} className="row g-3">
+        {/* "noValidate" desliga a validação do browser: as mensagens passam a
+            ser as nossas, em português e por baixo de cada campo. O "required"
+            fica nos campos — já não trava o envio, mas continua a dizer aos
+            leitores de ecrã que o campo é obrigatório. */}
+        <form onSubmit={submeter} className="row g-3" noValidate>
           <div className="col-12 col-md-5">
             <label className="form-label small mb-1" htmlFor="lote">Lote</label>
-            <input id="lote" className="form-control" required placeholder="Ex.: Lote de 50 kg de kiwi" value={form.lote} onChange={mudar('lote')} />
+            <input id="lote" className={classe(problemas.lote)} required
+              placeholder="Ex.: Lote de 50 kg de kiwi" value={form.lote} onChange={mudar('lote')} />
+            {tentou && problemas.lote && <small className="text-danger">{problemas.lote}</small>}
           </div>
           <div className="col-6 col-md-2">
             <label className="form-label small mb-1" htmlFor="precoBase">Preço base (€)</label>
-            <input id="precoBase" type="number" min="0" step="0.5" className="form-control" required value={form.precoBase} onChange={mudar('precoBase')} />
+            <input id="precoBase" type="number" min="0" step="0.5" required
+              className={classe(problemas.precoBase)}
+              value={form.precoBase} onChange={mudar('precoBase')} />
+            {tentou && problemas.precoBase && <small className="text-danger">{problemas.precoBase}</small>}
           </div>
           <div className="col-6 col-md-2">
             <label className="form-label small mb-1" htmlFor="incremento">Incremento (€)</label>
-            <input id="incremento" type="number" min="1" step="1" className="form-control" required value={form.incremento} onChange={mudar('incremento')} />
+            <input id="incremento" type="number" min="1" step="1" required
+              className={classe(problemas.incremento)}
+              value={form.incremento} onChange={mudar('incremento')} />
+            {tentou && problemas.incremento && <small className="text-danger">{problemas.incremento}</small>}
           </div>
           <div className="col-12 col-md-3">
             <label className="form-label small mb-1" htmlFor="hora">Começa hoje às</label>
@@ -217,7 +275,9 @@ export default function MeusLeiloes() {
           </div>
 
           <div className="col-12">
-            <button className="btn btn-terracota" disabled={!duracaoValida || !horaValida}>Agendar leilão</button>
+            {/* O botão nunca está desativado: um botão que não responde não
+                explica o que falta. O clique é que diz o que há para corrigir. */}
+            <button className="btn btn-terracota">Agendar leilão</button>
             <p className="small text-black-50 mt-2 mb-0">
               O leilão abre sozinho à hora marcada e fecha quando a duração acabar.
               O tempo até abrir dá aos compradores a hipótese de entrarem na sala a tempo.
@@ -265,6 +325,34 @@ export default function MeusLeiloes() {
         </div>
         {leiloes.length === 0 && <p className="text-black-50 small mb-0">Ainda não criou leilões.</p>}
       </div>
+
+      {aConfirmar && (
+        <Modal
+          titulo="Confirmar o leilão"
+          aoFechar={() => setAConfirmar(false)}
+          rodape={
+            <>
+              <button type="button" className="btn btn-outline-secondary" onClick={() => setAConfirmar(false)}>
+                Voltar atrás
+              </button>
+              <button type="button" className="btn btn-terracota" disabled={aEnviar} onClick={criar}>
+                {aEnviar ? 'A agendar…' : 'Agendar leilão'}
+              </button>
+            </>
+          }
+        >
+          <p className="mb-2">Vai agendar este leilão:</p>
+          <ul className="list-unstyled small mb-0">
+            <li className="fw-semibold">{form.lote}</li>
+            <li>Base {euros(Number(form.precoBase))} · incremento {euros(Number(form.incremento))}</li>
+            <li>Abre hoje às {form.hora}:{form.minuto}, daqui a {emPalavras(faltam)}</li>
+            <li>Dura {emPalavras(duracaoMinutos)} e fecha às {dataPt(terminaEm)}</li>
+          </ul>
+          <p className="small text-black-50 mt-3 mb-0">
+            Depois de abrir, o leilão corre sozinho e os compradores podem licitar.
+          </p>
+        </Modal>
+      )}
 
       {aApagar && (
         <ModalConfirmar

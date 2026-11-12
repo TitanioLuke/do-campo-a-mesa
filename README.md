@@ -288,7 +288,9 @@ TrabalhoPratico/
         │   ├── produtor/         # Painel, produtos, encomendas, leilões, página pública
         │   └── admin/PainelAdmin.jsx
         ├── dados/concelhos.js    # Os 308 concelhos, com distrito e coordenadas
-        ├── servicos/api.js       # Camada única de acesso à API
+        ├── servicos/
+        │   ├── api.js           # Camada única de acesso à API
+        │   └── validacao.js     # Regras repetidas dos formulários
         ├── estilos/              # SASS
         │   ├── _variaveis.scss  _mixins.scss
         │   ├── _layout.scss  _componentes.scss  main.scss
@@ -405,15 +407,39 @@ exceções com a mensagem em português.
 
 ### 9.1. Decisões de interface
 
-Três coisas que valem por toda a aplicação:
+Decisões que valem por toda a aplicação:
 
 - **Avisos num sítio só.** `AvisosContext` guarda uma fila de avisos temporários e
   qualquer página chama `sucesso()` ou `erro()`. O mesmo mecanismo serve os eventos que
   chegam pelo WebSocket e as confirmações dos formulários, por isso não há páginas com
   caixas de erro e outras em que o erro se perde.
-- **Janelas modais** para o que precisa de uma decisão consciente: confirmar uma licitação
-  e escrever uma avaliação. Fecham com Escape ou com um clique fora, e bloqueiam o deslize
-  da página por trás.
+- **Janelas modais** para o que precisa de uma decisão consciente. Fecham com Escape ou
+  com um clique fora, e bloqueiam o deslize da página por trás. No telemóvel encostam ao
+  fundo do ecrã, que é onde o polegar chega.
+- **Validação dos formulários feita pela aplicação, não pelo browser.** O atributo
+  `required` do HTML trava o envio, mas a mensagem que mostra é uma caixa cinzenta do
+  browser e vem no idioma dele — numa página inteiramente em português aparecia *"Please
+  fill out this field"*. Os seis formulários da aplicação (entrar, registo, os dois perfis,
+  produtos e leilões) levam `noValidate`, e as mensagens passam a ser escritas por nós,
+  **por baixo do campo que está errado** e com a moldura a vermelho (`is-invalid` do
+  Bootstrap), mais um aviso a dizer que há campos por corrigir.
+
+  O `required` fica nos campos: já não trava o envio, mas continua a ser o que diz aos
+  leitores de ecrã que o campo é obrigatório. As regras de cada formulário são um objeto
+  `problemas` calculado a cada render — não é estado, é uma leitura do que lá está — e as
+  duas verificações que se repetiam (campo vazio, forma de um email) estão em
+  `servicos/validacao.js`, para a mesma regra não ser escrita de maneiras diferentes em
+  cada página. As mensagens só aparecem **depois da primeira tentativa de submeter**: um
+  formulário que abre todo vermelho está a ralhar com quem ainda não fez nada. E nenhum
+  botão fica desativado por causa da validação — um botão que não responde não explica o
+  que falta; o clique é que diz.
+- **Confirmação antes do que não se desfaz.** Apagar um produto, um leilão ou uma avaliação,
+  rejeitar o registo de um produtor, esvaziar o carrinho e agendar um leilão passam todos
+  pela mesma janela (`ModalConfirmar`), e cada uma diz o que vai acontecer em concreto —
+  o leilão avisa se já tem licitações, porque o histórico é apagado com ele. Agendar um
+  leilão não é destrutivo, mas é um compromisso: abre sozinho e qualquer comprador pode
+  licitar, por isso a confirmação mostra o resumo (lote, base, incremento, a que horas abre
+  e quando fecha) antes de criar seja o que for.
 - **Rodapé colado ao fundo**, com `#root` em `flex-column` e o conteúdo a crescer
   (`flex: 1 0 auto`). Nas páginas curtas o rodapé fica no fundo do ecrã em vez de deixar
   uma faixa branca por baixo.

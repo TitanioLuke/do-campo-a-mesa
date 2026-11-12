@@ -8,11 +8,13 @@ import { CONCELHOS_POR_DISTRITO } from '../dados/concelhos';
  * se filtra são exatamente iguais — não há "Ponte de Lima" a falhar contra
  * "ponte de lima" nem contra "Ponte Lima".
  */
-export default function SelectLocalidade({ id, valor, aoMudar, textoVazio, obrigatorio = false }) {
+export default function SelectLocalidade({
+  id, valor, aoMudar, textoVazio, obrigatorio = false, invalido = false,
+}) {
   return (
     <select
       id={id}
-      className="form-select"
+      className={`form-select${invalido ? ' is-invalid' : ''}`}
       value={valor}
       required={obrigatorio}
       onChange={(evento) => aoMudar(evento.target.value)}

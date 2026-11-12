@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexto/AuthContext';
 import { useAvisos } from '../contexto/AvisosContext';
 import CampoPassword from '../componentes/CampoPassword';
+import { emailValido, vazio } from '../servicos/validacao';
 
 const CONTAS = [
   ['Comprador', 'ana@dcm.pt'],
@@ -17,6 +18,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [aEnviar, setAEnviar] = useState(false);
+  const [tentou, setTentou] = useState(false);
 
   const { entrar, temSessao, papel } = useAuth();
   const { sucesso, erro } = useAvisos();
@@ -27,8 +29,20 @@ export default function Login() {
   // na seta de voltar atrás depois de entrar.
   if (temSessao) return <Navigate to={DESTINOS[papel] || '/'} replace />;
 
+  // Validação própria, por baixo de cada campo (ver servicos/validacao.js)
+  const problemas = {
+    email: vazio(email) ? 'Escreva o seu email.'
+      : emailValido(email) ? '' : 'Esse email não parece válido.',
+    password: vazio(password) ? 'Escreva a password.' : '',
+  };
+  const formularioValido = !Object.values(problemas).some(Boolean);
+  const classe = (problema) => `form-control${tentou && problema ? ' is-invalid' : ''}`;
+
   async function submeter(evento) {
     evento.preventDefault();
+    setTentou(true);
+    if (!formularioValido) return erro('Há campos por corrigir no formulário.');
+
     setAEnviar(true);
     try {
       const utilizador = await entrar(email, password);
@@ -50,18 +64,19 @@ export default function Login() {
         <div className="painel">
           <h1 className="h4 mb-3">Entrar</h1>
 
-          <form onSubmit={submeter}>
+          <form onSubmit={submeter} noValidate>
             <div className="mb-3">
               <label className="form-label" htmlFor="email">Email</label>
               <input
                 id="email"
                 type="email"
-                className="form-control"
+                className={classe(problemas.email)}
                 autoComplete="username"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
+              {tentou && problemas.email && <small className="text-danger">{problemas.email}</small>}
             </div>
 
             <div className="mb-3">
@@ -70,9 +85,11 @@ export default function Login() {
                 id="password"
                 autoComplete="current-password"
                 required
+                className={classe(problemas.password)}
                 valor={password}
                 aoMudar={setPassword}
               />
+              {tentou && problemas.password && <small className="text-danger">{problemas.password}</small>}
             </div>
 
             <button className="btn btn-verde w-100" disabled={aEnviar}>

@@ -31,6 +31,9 @@ export default function PainelAdmin() {
   const [encomendas, setEncomendas] = useState([]);
   const [apiViva, setApiViva] = useState(null);
   const [aApagar, setAApagar] = useState(null); // avaliação à espera de confirmação
+  // Rejeitar um registo tira o produtor desta lista e não há por onde voltar
+  // atrás na aplicação, por isso também passa por uma confirmação.
+  const [aRejeitar, setARejeitar] = useState(null);
 
   const { ligado } = useSocket();
   const { sucesso, erro } = useAvisos();
@@ -170,7 +173,7 @@ export default function PainelAdmin() {
                   </div>
                   <div className="d-flex gap-2">
                     <button className="btn btn-sm btn-verde" onClick={() => validar(p, 'aprovado')}>Aprovar</button>
-                    <button className="btn btn-sm btn-outline-danger" onClick={() => validar(p, 'rejeitado')}>Rejeitar</button>
+                    <button className="btn btn-sm btn-outline-danger" onClick={() => setARejeitar(p)}>Rejeitar</button>
                   </div>
                 </div>
               </div>
@@ -277,6 +280,16 @@ export default function PainelAdmin() {
           </div>
           {encomendas.length === 0 && <p className="text-black-50 small mb-0">Ainda não há encomendas.</p>}
         </div>
+      )}
+
+      {aRejeitar && (
+        <ModalConfirmar
+          titulo="Rejeitar registo"
+          mensagem={`O registo de "${aRejeitar.nome}" é rejeitado e o produtor recebe o aviso na hora. Os seus produtos continuam fora do catálogo e o registo deixa esta lista.`}
+          textoAcao="Rejeitar"
+          aoConfirmar={() => { const p = aRejeitar; setARejeitar(null); validar(p, 'rejeitado'); }}
+          aoFechar={() => setARejeitar(null)}
+        />
       )}
 
       {aApagar && (

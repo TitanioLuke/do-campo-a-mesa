@@ -5,6 +5,7 @@ import { coordenadasDe } from '../dados/concelhos';
 import SelectLocalidade from '../componentes/SelectLocalidade';
 import CampoPassword from '../componentes/CampoPassword';
 import { useAvisos } from '../contexto/AvisosContext';
+import { emailValido, vazio } from '../servicos/validacao';
 
 export default function Registo() {
   const [dados, setDados] = useState({
@@ -12,6 +13,7 @@ export default function Registo() {
     localidade: '', descricao: '', telefone: '', morada: '',
   });
   const [aEnviar, setAEnviar] = useState(false);
+  const [tentou, setTentou] = useState(false);
 
   const { registar, temSessao, papel } = useAuth();
   const { sucesso, erro } = useAvisos();
@@ -24,8 +26,29 @@ export default function Registo() {
     return <Navigate to={{ produtor: '/produtor', admin: '/admin' }[papel] || '/'} replace />;
   }
 
+  const eProdutor = dados.papel === 'produtor';
+
+  // Validação própria, por baixo de cada campo (ver servicos/validacao.js)
+  const problemas = {
+    nome: vazio(dados.nome)
+      ? (eProdutor ? 'Escreva o nome do produtor ou da quinta.' : 'Escreva o seu nome.')
+      : '',
+    email: vazio(dados.email) ? 'Escreva o seu email.'
+      : emailValido(dados.email) ? '' : 'Esse email não parece válido.',
+    password: vazio(dados.password) ? 'Escolha uma password.'
+      : dados.password.length < 6 ? 'A password tem de ter pelo menos 6 caracteres.'
+      : '',
+    // Só o produtor escolhe concelho: é por ele que aparece nos filtros e no mapa
+    localidade: eProdutor && vazio(dados.localidade) ? 'Escolha o concelho.' : '',
+  };
+  const formularioValido = !Object.values(problemas).some(Boolean);
+  const classe = (problema) => `form-control${tentou && problema ? ' is-invalid' : ''}`;
+
   async function submeter(evento) {
     evento.preventDefault();
+    setTentou(true);
+    if (!formularioValido) return erro('Há campos por corrigir no formulário.');
+
     setAEnviar(true);
     try {
       const corpo = { ...dados };
@@ -52,7 +75,7 @@ export default function Registo() {
         <div className="painel">
           <h1 className="h4 mb-3">Criar conta</h1>
 
-          <form onSubmit={submeter}>
+          <form onSubmit={submeter} noValidate>
             <div className="mb-3">
               <label className="form-label">Quero registar-me como</label>
               <div className="btn-group w-100" role="group">
@@ -71,12 +94,14 @@ export default function Registo() {
 
             <div className="row g-3">
               <div className="col-12 col-md-6">
-                <label className="form-label" htmlFor="nome">{dados.papel === 'produtor' ? 'Nome do produtor / quinta' : 'Nome'}</label>
-                <input id="nome" className="form-control" required value={dados.nome} onChange={mudar('nome')} />
+                <label className="form-label" htmlFor="nome">{eProdutor ? 'Nome do produtor / quinta' : 'Nome'}</label>
+                <input id="nome" className={classe(problemas.nome)} required value={dados.nome} onChange={mudar('nome')} />
+                {tentou && problemas.nome && <small className="text-danger">{problemas.nome}</small>}
               </div>
               <div className="col-12 col-md-6">
                 <label className="form-label" htmlFor="email">Email</label>
-                <input id="email" type="email" className="form-control" required value={dados.email} onChange={mudar('email')} />
+                <input id="email" type="email" className={classe(problemas.email)} required value={dados.email} onChange={mudar('email')} />
+                {tentou && problemas.email && <small className="text-danger">{problemas.email}</small>}
               </div>
               <div className="col-12 col-md-6">
                 <label className="form-label" htmlFor="password">Password (mín. 6 caracteres)</label>
@@ -85,9 +110,11 @@ export default function Registo() {
                   autoComplete="new-password"
                   required
                   minLength={6}
+                  className={classe(problemas.password)}
                   valor={dados.password}
                   aoMudar={(valor) => setDados({ ...dados, password: valor })}
                 />
+                {tentou && problemas.password && <small className="text-danger">{problemas.password}</small>}
               </div>
 
               <div className="col-12 col-md-6">
@@ -95,7 +122,7 @@ export default function Registo() {
                 <input id="telefone" className="form-control" value={dados.telefone} onChange={mudar('telefone')} />
               </div>
 
-              {dados.papel === 'comprador' && (
+              {!eProdutor && (
                 <div className="col-12">
                   <label className="form-label" htmlFor="morada">Morada <span className="text-black-50">(opcional)</span></label>
                   <textarea
@@ -109,7 +136,7 @@ export default function Registo() {
                 </div>
               )}
 
-              {dados.papel === 'produtor' && (
+              {eProdutor && (
                 <>
                   <div className="col-12 col-md-6">
                     <label className="form-label" htmlFor="localidade">Concelho</label>
@@ -118,8 +145,9 @@ export default function Registo() {
                       valor={dados.localidade}
                       aoMudar={(valor) => setDados({ ...dados, localidade: valor })}
                       obrigatorio
+                      invalido={tentou && !!problemas.localidade}
                     />
-                    <small className="text-black-50">É o que os compradores veem e por onde o encontram nos filtros.</small>
+                    {tentou && problemas.localidade && <small className="text-danger">{problemas.localidade}</small>}
                   </div>
                   <div className="col-12">
                     <label className="form-label" htmlFor="descricao">Apresentação</label>

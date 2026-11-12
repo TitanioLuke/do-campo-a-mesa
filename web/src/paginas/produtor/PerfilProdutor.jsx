@@ -5,6 +5,7 @@ import { useAuth } from '../../contexto/AuthContext';
 import { useAvisos } from '../../contexto/AvisosContext';
 import { coordenadasDe } from '../../dados/concelhos';
 import SelectLocalidade from '../../componentes/SelectLocalidade';
+import { vazio } from '../../servicos/validacao';
 import NavProdutor from './NavProdutor';
 
 /**
@@ -23,6 +24,15 @@ export default function PerfilProdutor() {
   });
   const { sucesso, erro } = useAvisos();
   const [aGuardar, setAGuardar] = useState(false);
+  const [tentou, setTentou] = useState(false);
+
+  // Validação própria, por baixo de cada campo (ver servicos/validacao.js)
+  const problemas = {
+    nome: vazio(form.nome) ? 'O nome não pode ficar vazio.' : '',
+    localidade: vazio(form.localidade) ? 'Escolha o concelho.' : '',
+  };
+  const formularioValido = !Object.values(problemas).some(Boolean);
+  const classe = (problema) => `form-control${tentou && problema ? ' is-invalid' : ''}`;
 
   const mudar = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
 
@@ -31,6 +41,9 @@ export default function PerfilProdutor() {
 
   async function submeter(evento) {
     evento.preventDefault();
+    setTentou(true);
+    if (!formularioValido) return erro('Há campos por corrigir no formulário.');
+
     setAGuardar(true);
 
     try {
@@ -53,10 +66,11 @@ export default function PerfilProdutor() {
           <div className="painel">
             <h2 className="h6">Dados mostrados aos visitantes</h2>
 
-            <form onSubmit={submeter} className="row g-3">
+            <form onSubmit={submeter} className="row g-3" noValidate>
               <div className="col-12 col-md-6">
                 <label className="form-label small mb-1" htmlFor="nome">Nome do produtor / quinta</label>
-                <input id="nome" className="form-control" required value={form.nome} onChange={mudar('nome')} />
+                <input id="nome" className={classe(problemas.nome)} required value={form.nome} onChange={mudar('nome')} />
+                {tentou && problemas.nome && <small className="text-danger">{problemas.nome}</small>}
               </div>
 
               <div className="col-12 col-md-6">
@@ -71,10 +85,13 @@ export default function PerfilProdutor() {
                   valor={form.localidade}
                   aoMudar={(valor) => setForm({ ...form, localidade: valor })}
                   obrigatorio
+                  invalido={tentou && !!problemas.localidade}
                 />
-                <small className="text-black-50">
-                  O mapa da sua página é colocado automaticamente no concelho que escolher.
-                </small>
+                {tentou && problemas.localidade
+                  ? <small className="text-danger">{problemas.localidade}</small>
+                  : <small className="text-black-50">
+                      O mapa da sua página é colocado automaticamente no concelho que escolher.
+                    </small>}
               </div>
 
               <div className="col-12">

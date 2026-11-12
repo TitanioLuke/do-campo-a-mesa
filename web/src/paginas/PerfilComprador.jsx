@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api, dataPt, euros } from '../servicos/api';
 import { useAuth } from '../contexto/AuthContext';
 import { useAvisos } from '../contexto/AvisosContext';
+import { vazio } from '../servicos/validacao';
 
 /**
  * Perfil do comprador: os seus dados e um resumo das compras.
@@ -20,6 +21,12 @@ export default function PerfilComprador() {
   });
   const [encomendas, setEncomendas] = useState([]);
   const [aGuardar, setAGuardar] = useState(false);
+  const [tentou, setTentou] = useState(false);
+
+  // Validação própria, por baixo de cada campo (ver servicos/validacao.js)
+  const problemas = { nome: vazio(dados.nome) ? 'O nome não pode ficar vazio.' : '' };
+  const formularioValido = !Object.values(problemas).some(Boolean);
+  const classe = (problema) => `form-control${tentou && problema ? ' is-invalid' : ''}`;
 
   const mudar = (campo) => (e) => setDados({ ...dados, [campo]: e.target.value });
 
@@ -47,6 +54,9 @@ export default function PerfilComprador() {
 
   async function submeter(evento) {
     evento.preventDefault();
+    setTentou(true);
+    if (!formularioValido) return erro('Há campos por corrigir no formulário.');
+
     setAGuardar(true);
     try {
       atualizar(await api.put('/auth/me', dados));
@@ -76,10 +86,11 @@ export default function PerfilComprador() {
           <div className="painel h-100">
             <h2 className="h6">Os meus dados</h2>
 
-            <form onSubmit={submeter}>
+            <form onSubmit={submeter} noValidate>
               <div className="mb-3">
                 <label className="form-label small mb-1" htmlFor="nome">Nome</label>
-                <input id="nome" className="form-control" required value={dados.nome} onChange={mudar('nome')} />
+                <input id="nome" className={classe(problemas.nome)} required value={dados.nome} onChange={mudar('nome')} />
+                {tentou && problemas.nome && <small className="text-danger">{problemas.nome}</small>}
               </div>
 
               <div className="mb-3">
