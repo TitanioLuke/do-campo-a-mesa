@@ -63,6 +63,112 @@
   margin-left: 0.35rem;
 }
 
+// ---------- Sininho das notificações ----------
+.sininho {
+  position: relative;
+
+  .botao-sino {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 0;
+    background: none;
+    color: rgba(255, 255, 255, 0.85);
+    padding: 0.6rem 0.75rem;
+
+    &:hover { color: v.$branco; }
+
+    // O nome só aparece no menu do telemóvel
+    .rotulo { font-size: 1rem; }
+
+    @include m.a-partir-de(md) {
+      padding: 0.4rem 0.5rem;
+      .rotulo { display: none; }
+    }
+  }
+
+  // A caixa cai por baixo do sino e nunca passa a largura do ecrã
+  .caixa-sininho {
+    position: absolute;
+    top: 100%;
+    // No telemóvel o sino está à esquerda, dentro do menu aberto: a caixa tem
+    // de abrir para a direita ou sai do ecrã. No computador é ao contrário.
+    left: 0;
+
+    @include m.a-partir-de(md) {
+      left: auto;
+      right: 0;
+    }
+    z-index: 1040;
+    width: min(320px, calc(100vw - 2rem));
+    max-height: 60vh;
+    overflow-y: auto;
+    background: v.$branco;
+    border: 1px solid v.$cinza-borda;
+    border-radius: v.$raio;
+    box-shadow: v.$sombra-forte;
+    color: v.$cinza-texto;
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0.85rem;
+      border-bottom: 1px solid v.$cinza-borda;
+    }
+
+    .vazio {
+      margin: 0;
+      padding: 1rem 0.85rem;
+      font-size: 0.875rem;
+      color: #6b6b64;
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    li + li { border-top: 1px solid v.$cinza-borda; }
+
+    a {
+      display: block;
+      padding: 0.6rem 0.85rem;
+      color: inherit;
+      text-decoration: none;
+      font-size: 0.875rem;
+      line-height: 1.35;
+
+      &:hover { background: v.$verde-muito-claro; }
+
+      small {
+        display: block;
+        margin-top: 0.15rem;
+        color: #8a8a82;
+        font-size: 0.75rem;
+      }
+    }
+  }
+}
+
+// Pin do mapa onde o produtor escolhe o seu lugar. É um `divIcon` do
+// Leaflet, ou seja, um elemento normal: desenha-se em CSS e não precisa das
+// imagens que o Leaflet traz.
+.pin-mapa {
+  border-radius: 999px;
+  background: v.$terracota;
+  border: 3px solid v.$branco;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+// A classe é posta pelo Leaflet só nos marcadores que se podem arrastar
+.leaflet-marker-draggable.pin-mapa {
+  cursor: grab;
+
+  &:active { cursor: grabbing; }
+}
+
 // Ponto de estado, usado onde antes havia emojis (ligado, em direto, parado)
 .ponto {
   display: inline-block;
@@ -216,13 +322,84 @@
 }
 
 .caixa-modal {
-  @include m.cartao(1.25rem);
+  background: v.$branco;
+  border-radius: v.$raio;
   box-shadow: v.$sombra-forte;
   width: 100%;
   max-width: 480px;
   max-height: 90vh;
-  overflow-y: auto;
   animation: subir 0.2s ease;
+
+  // A caixa é uma coluna: só o corpo estica e desliza, para o título e os
+  // botões ficarem sempre à vista num ecrã pequeno.
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid v.$cinza-borda;
+
+    h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: v.$verde;
+    }
+
+    .btn-close {
+      flex-shrink: 0;
+      opacity: 0.4;
+      &:hover { opacity: 0.9; }
+      &:focus { box-shadow: none; }
+    }
+  }
+
+  > .corpo {
+    padding: 1.25rem;
+    overflow-y: auto;
+  }
+
+  > footer {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    padding: 0.875rem 1.25rem;
+    border-top: 1px solid v.$cinza-borda;
+    background: v.$fundo;
+
+    // No telemóvel os botões ocupam a largura toda, como no resto da aplicação
+    .btn { flex: 1 1 auto; }
+
+    @include m.a-partir-de(md) {
+      .btn { flex: 0 0 auto; }
+    }
+  }
+}
+
+// Resumo em duas colunas dentro de um modal: rótulo à esquerda, valor à
+// direita, como um talão. Usado na confirmação do leilão.
+.lista-resumo {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.4rem 1rem;
+  margin: 0;
+
+  dt {
+    font-weight: 400;
+    color: #6b6b64;
+  }
+
+  dd {
+    margin: 0;
+    text-align: right;
+    font-weight: 600;
+  }
 }
 
 @keyframes aparecer {
@@ -283,6 +460,11 @@
   height: 220px;
   border: 0;
   border-radius: v.$raio;
+  // O mapa do Leaflet tem camadas com z-index alto por dentro. Isto prende-as
+  // aqui, para não passarem por cima do cabeçalho nem do sininho.
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
 
   @include m.a-partir-de(lg) { height: 300px; }
 }

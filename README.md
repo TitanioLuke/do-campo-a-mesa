@@ -46,6 +46,7 @@ vários compradores a licitar em simultâneo.
 | Autenticação | JWT (jsonwebtoken) + bcryptjs |
 | Documentação | OpenAPI 3 + Swagger UI |
 | Upload de imagens | Multer (pasta local `uploads/`) |
+| Mapas | Leaflet + mosaicos do OpenStreetMap |
 
 ---
 
@@ -183,13 +184,16 @@ ainda não foi validado: é o que permite demonstrar a aprovação no painel do 
   e **notificação em tempo real** sempre que o produtor muda o estado.
 - Avaliar **produtos** e **produtores** (1–5 estrelas + comentário), em qualquer dos casos
   só depois de ter uma encomenda entregue, e só uma vez por produto / por produtor.
-- Denunciar avaliações para moderação.
+- **Denunciar avaliações** para moderação, tanto na página do produto como na do produtor.
+  A denúncia chega ao painel do administrador na hora, sem ele recarregar nada.
+- **Sininho de notificações** no cabeçalho: cada mudança de estado de uma encomenda fica lá
+  guardada, não só no aviso que passa (secção 14.9).
 - Entrar na sala de um leilão e licitar: contagem decrescente, número de participantes,
   histórico de licitações, atalhos que licitam logo o valor seguinte e validação do
   mínimo no servidor. Licitar nos últimos 30 segundos **prolonga** o leilão, para
   ninguém ganhar à última sem dar aos outros tempo de resposta (secção 14.8).
 - **Perfil próprio** onde altera nome, telefone e morada, com um resumo das compras
-  (encomendas, produtores a quem comprou e total gasto).
+  (encomendas, produtores a quem comprou, artigos de cada uma e total gasto).
 
 ### Produtor
 
@@ -197,6 +201,8 @@ ainda não foi validado: é o que permite demonstrar a aprovação no painel do 
   e avaliação média.
 - **Alertas de stock baixo** (produtos com menos de 5 unidades).
 - Gestão do catálogo: criar, editar e apagar produtos, com upload de fotografia.
+  **Só depois de o administrador aprovar o registo**: até lá o produtor entra e vê o painel,
+  mas não cria nem altera produtos, leilões ou fotografias (secção 13).
 - Encomendas recebidas, com filtro por estado e botão para avançar o estado
   (o comprador é notificado na hora).
 - **Agendar leilões** (lote, preço base, incremento, hora de abertura e duração).
@@ -208,9 +214,13 @@ ainda não foi validado: é o que permite demonstrar a aprovação no painel do 
   ninguém ter de converter nada de cabeça. O formulário diz por baixo quanto vai durar
   ("O leilão dura 2h 30min.") e não deixa agendar se a soma for zero ou passar a semana.
   O leilão abre e fecha sozinho à hora marcada.
-- Editar a sua **página pública** (nome, concelho, telefone e apresentação), com
-  pré-visualização ao lado do formulário. O mapa é colocado automaticamente no concelho
-  escolhido — ninguém tem de copiar latitudes e longitudes à mão.
+- Editar a sua **página pública** (nome, concelho, telefone, morada e apresentação), com
+  pré-visualização ao lado do formulário. O ponto no mapa escolhe-se de duas maneiras:
+  escrevendo a morada e carregando em **"Procurar no mapa"**, ou **arrastando o pin** para o
+  sítio exato — ninguém tem de copiar latitudes e longitudes à mão.
+- **Sininho de notificações** no cabeçalho, em tempo real: alguém comprou, alguém avaliou, um
+  leilão acabou (e com quem ficou), o administrador validou o registo. Cada linha leva à
+  página que a resolve (secção 14.9).
 
 ### Administrador
 
@@ -290,7 +300,8 @@ TrabalhoPratico/
         ├── dados/concelhos.js    # Os 308 concelhos, com distrito e coordenadas
         ├── servicos/
         │   ├── api.js           # Camada única de acesso à API
-        │   └── validacao.js     # Regras repetidas dos formulários
+        │   ├── validacao.js     # Regras repetidas dos formulários
+        │   └── geocodificar.js  # Morada escrita -> coordenadas
         ├── estilos/              # SASS
         │   ├── _variaveis.scss  _mixins.scss
         │   ├── _layout.scss  _componentes.scss  main.scss
@@ -440,6 +451,22 @@ Decisões que valem por toda a aplicação:
   leilão não é destrutivo, mas é um compromisso: abre sozinho e qualquer comprador pode
   licitar, por isso a confirmação mostra o resumo (lote, base, incremento, a que horas abre
   e quando fecha) antes de criar seja o que for.
+- **Um mapa, duas utilizações.** O produtor marca onde fica de duas maneiras: escreve a morada
+  e o OpenStreetMap devolve o ponto (`servicos/geocodificar.js`, com a pesquisa limitada a
+  Portugal), ou arrasta o pin — que é o que salva uma quinta ao fim de um caminho de terra, onde
+  morada nenhuma acerta. Os dois caminhos acabam no mesmo sítio: duas coordenadas guardadas no
+  produtor. O concelho continua a existir à parte, porque é por ele que se filtra no catálogo,
+  e é ele que dá o ponto de partida do mapa.
+
+  O mesmo componente (`componentes/Mapa.jsx`) serve a página pública, aí só para ver — é o
+  `arrastavel` que muda. O pin é desenhado em CSS com um `divIcon`: as imagens que o Leaflet
+  traz são carregadas por um caminho relativo que o empacotador não reescreve e ficariam
+  partidas em produção.
+
+  A morada escrita é enviada para o openstreetmap.org, que é o que permite converter texto em
+  coordenadas. O resultado fica na nossa base de dados, por isso a pesquisa acontece uma vez,
+  quando o produtor a pede, e não a cada visita à página dele.
+
 - **Rodapé colado ao fundo**, com `#root` em `flex-column` e o conteúdo a crescer
   (`flex: 1 0 auto`). Nas páginas curtas o rodapé fica no fundo do ecrã em vez de deixar
   uma faixa branca por baixo.
@@ -683,6 +710,24 @@ da resposta e colá-lo no botão **Authorize**.
   ```
 
   Usado como `auth('produtor')`, `auth('admin')`, `auth('comprador', 'produtor')`.
+
+- **Ser produtor não chega: tem de estar aprovado.** O papel diz o que a conta é, não se já
+  pode trabalhar. Um segundo middleware (`api/src/middleware/produtorAprovado.js`) protege
+  tudo o que um produtor cria ou altera — produtos, leilões e fotografias — e responde 403
+  enquanto o administrador não validar o registo:
+
+  ```js
+  router.post('/', autenticar('produtor'), produtorAprovado, async (req, res) => { … });
+  ```
+
+  O estado é lido da **base de dados** e não do token. O token é assinado no início da sessão
+  e não muda quando o administrador aprova: lê-lo daí obrigaria o produtor a sair e a voltar a
+  entrar para começar a vender. É uma consulta a mais por escrita, só nas escritas, e em troca
+  a aprovação tem efeito no instante seguinte.
+
+  No ecrã, a mesma regra faz desaparecer os formulários e os botões de editar e apagar: um
+  formulário que só serve para receber um erro é pior do que não estar lá. A regra que vale,
+  no entanto, é a do servidor — a interface apenas evita o caminho sem saída.
 
 - **Posse do recurso verificada no filtro da query**, não só pelo papel. Um produtor autenticado
   não consegue editar o produto de outro porque o `_id` do dono faz parte do filtro:
@@ -954,7 +999,7 @@ empurrou o fim exatamente 30 segundos e os dois clientes receberam a mesma data 
 segunda licitação dentro da janela voltou a empurrar; e, sem mais licitações, o leilão fechou
 30 segundos depois da última, com o vencedor e o valor certos.
 
-### 14.9. Notificações de encomendas
+### 14.9. Notificações: o aviso que passa e o sininho que fica
 
 Quando o produtor muda o estado de uma encomenda, a rota REST usa o `io` para avisar o comprador
 na sua sala pessoal:
@@ -968,6 +1013,44 @@ req.app.get('io').to(`user:${encomenda.comprador}`).emit('encomenda-atualizada',
 No cliente, a página "As minhas encomendas" ouve o mesmo evento e atualiza a lista sem
 recarregar; em paralelo, o `SocketContext` mostra um *toast*. Quando um comprador fecha uma
 encomenda, o produtor recebe `nova-encomenda` e o painel recarrega os indicadores.
+
+**O problema do aviso que passa.** O *toast* desaparece ao fim de segundos. Serve para quem
+está a olhar — e não serve para mais nada: quem estava noutro separador perdia a venda, a
+avaliação e o fim do leilão. Por isso cada evento da sala pessoal passou a ter dois destinos:
+o aviso, que passa, e o **sininho** no cabeçalho, que fica.
+
+```js
+const avisar = (texto, tipo, para) => {
+  notificar(texto, tipo);      // o aviso que passa
+  acrescentar(texto, para);    // a linha no sininho, que fica
+};
+```
+
+O que cada papel recebe:
+
+| Papel | Evento | O que aconteceu |
+| --- | --- | --- |
+| Comprador | `encomenda-atualizada` | a encomenda mudou de estado |
+| Comprador | `leilao-ganho` | ganhou um leilão |
+| Produtor | `nova-encomenda` | alguém comprou |
+| Produtor | `nova-avaliacao` | alguém avaliou um produto seu, ou a si |
+| Produtor | `leilao-fechado` | um leilão seu acabou — com quem ganhou e por quanto |
+| Produtor | `registo-validado` | o administrador aprovou ou rejeitou o registo |
+| Administrador | `avaliacao-denunciada` | há uma avaliação para moderar |
+
+As notificações ficam guardadas no browser, por utilizador (`notificacoes:<id>`), e cada uma
+leva o caminho da página que a resolve: a encomenda, a sala do leilão, as avaliações. Abrir o
+sininho é dar por lidas. Não é um histórico — guarda as 20 últimas e tem um botão de limpar.
+
+Duas consequências que não se veem à primeira:
+
+- O `registo-validado` não se limita a avisar: **corrige o utilizador da sessão**
+  (`atualizar((atual) => ({ ...atual, aprovado }))`). Sem isso, o produtor acabado de aprovar
+  via a mensagem e continuava sem os formulários, porque o estado do registo vinha do momento
+  em que iniciou a sessão.
+- A denúncia de uma avaliação é o único evento que não vai para uma sala pessoal: vai para a
+  sala `admins`, em que cada administrador entra ao ligar-se. O painel recarrega a lista de
+  moderação sem ninguém ter de recarregar a página.
 
 ---
 

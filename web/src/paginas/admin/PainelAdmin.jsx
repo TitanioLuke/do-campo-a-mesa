@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { API_URL, api, dataPt, euros } from '../../servicos/api';
+import { API_URL, api, artigos, dataPt, euros } from '../../servicos/api';
 import { useSocket } from '../../contexto/SocketContext';
 import { useAvisos } from '../../contexto/AvisosContext';
 import { useListaLeiloes } from '../../hooks/useListaLeiloes';
@@ -35,7 +35,7 @@ export default function PainelAdmin() {
   // atrás na aplicação, por isso também passa por uma confirmação.
   const [aRejeitar, setARejeitar] = useState(null);
 
-  const { ligado } = useSocket();
+  const { ligado, socket } = useSocket();
   const { sucesso, erro } = useAvisos();
   const { leiloes } = useListaLeiloes('?estado=ativo'); // em tempo real
 
@@ -49,6 +49,14 @@ export default function PainelAdmin() {
   }
 
   useEffect(carregar, []);
+
+  // As denúncias dos compradores chegam ao painel sem recarregar a página: o
+  // servidor manda-as à sala 'admins' assim que alguém carrega em denunciar.
+  useEffect(() => {
+    if (!socket) return;
+    socket.on('avaliacao-denunciada', carregar);
+    return () => socket.off('avaliacao-denunciada', carregar);
+  }, [socket]);
 
   async function validar(produtor, aprovado) {
     try {
@@ -264,13 +272,14 @@ export default function PainelAdmin() {
           <h2 className="h6">Últimas encomendas</h2>
           <div className="table-responsive">
             <table className="tabela-simples">
-              <thead><tr><th className={SECUNDARIA}>Data</th><th>Comprador</th><th className={SECUNDARIA}>Produtor</th><th>Total</th><th>Estado</th></tr></thead>
+              <thead><tr><th className={SECUNDARIA}>Data</th><th>Comprador</th><th className={SECUNDARIA}>Produtor</th><th>Artigos</th><th>Total</th><th>Estado</th></tr></thead>
               <tbody>
                 {encomendas.map((e) => (
                   <tr key={e._id}>
                     <td className={`small text-black-50 ${SECUNDARIA}`}>{dataPt(e.createdAt)}</td>
                     <td>{e.comprador?.nome}</td>
                     <td className={SECUNDARIA}>{e.produtor?.nome}</td>
+                    <td className="small">{artigos(e.linhas)}</td>
                     <td>{euros(e.total)}</td>
                     <td><EtiquetaEstado estado={e.estado} /></td>
                   </tr>

@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const Review = require('../models/Review');
 const autenticar = require('../middleware/auth');
+const produtorAprovado = require('../middleware/produtorAprovado');
 const { normalizar, escaparRegex } = require('../texto');
 
 const router = express.Router();
@@ -71,7 +72,7 @@ router.get('/:id/reviews', async (req, res) => {
 });
 
 /** POST /api/products — o produtor cria um produto. 201 + cabeçalho Location. */
-router.post('/', autenticar('produtor'), async (req, res) => {
+router.post('/', autenticar('produtor'), produtorAprovado, async (req, res) => {
   const { nome, categoria, preco } = req.body;
   if (!nome || !categoria || preco === undefined) {
     return res.status(400).json({ erro: 'Nome, categoria e preço são obrigatórios' });
@@ -89,7 +90,7 @@ router.post('/', autenticar('produtor'), async (req, res) => {
  * nome e da descrição. Com uma atualização direta esse campo ficaria preso ao
  * valor antigo e a pesquisa deixava de encontrar o produto pelo nome novo.
  */
-router.put('/:id', autenticar('produtor'), async (req, res) => {
+router.put('/:id', autenticar('produtor'), produtorAprovado, async (req, res) => {
   const { produtor, notaMedia, numAvaliacoes, procura, ...alteracoes } = req.body;
 
   // o filtro garante que é o dono
@@ -102,7 +103,7 @@ router.put('/:id', autenticar('produtor'), async (req, res) => {
 });
 
 /** DELETE /api/products/:id — 204 No Content. */
-router.delete('/:id', autenticar('produtor', 'admin'), async (req, res) => {
+router.delete('/:id', autenticar('produtor', 'admin'), produtorAprovado, async (req, res) => {
   const filtro = { _id: req.params.id };
   if (req.user.papel === 'produtor') filtro.produtor = req.user.id;
 

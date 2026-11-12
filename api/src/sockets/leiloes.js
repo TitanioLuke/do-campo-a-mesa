@@ -22,6 +22,7 @@ const SALAO = 'leiloes';
  *   leiloes        toda a gente, para as listas de leilões se manterem vivas
  *   leilao:<id>    uma sala por leilão (licitações e presença)
  *   user:<id>      sala pessoal de cada utilizador com sessão (notificações)
+ *   admins         os administradores, para as denúncias chegarem ao painel
  *
  * O servidor é a fonte da verdade: abre e fecha os leilões na hora certa e
  * valida cada licitação numa única operação atómica no MongoDB, só depois
@@ -52,6 +53,9 @@ module.exports = function configurarSockets(io) {
 
     // Sala pessoal: recebe as notificações de encomendas deste utilizador
     if (socket.user) socket.join(`user:${socket.user.id}`);
+
+    // Sala dos administradores: as avaliações denunciadas chegam ao painel
+    if (socket.user?.papel === 'admin') socket.join('admins');
 
     /** Entrar na sala de um leilão. */
     socket.on('entrar', async (leilaoId) => {

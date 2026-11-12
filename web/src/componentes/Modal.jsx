@@ -21,6 +21,9 @@ export default function Modal({ titulo, aoFechar, children, rodape }) {
 
   return (
     <div className="fundo-modal" onClick={aoFechar} role="presentation">
+      {/* Cabeçalho, corpo e rodapé são três zonas com fundos e limites
+          próprios: o título fica preso em cima, os botões em baixo, e o corpo
+          é o único que desliza quando o conteúdo é grande. */}
       <div
         className="caixa-modal"
         role="dialog"
@@ -28,14 +31,14 @@ export default function Modal({ titulo, aoFechar, children, rodape }) {
         aria-label={titulo}
         onClick={(evento) => evento.stopPropagation()}
       >
-        <div className="d-flex justify-content-between align-items-start gap-2 mb-3">
-          <h2 className="h6 mb-0">{titulo}</h2>
+        <header>
+          <h2>{titulo}</h2>
           <button type="button" className="btn-close" aria-label="Fechar" onClick={aoFechar} />
-        </div>
+        </header>
 
-        {children}
+        <div className="corpo">{children}</div>
 
-        {rodape && <div className="d-flex gap-2 justify-content-end mt-3">{rodape}</div>}
+        {rodape && <footer>{rodape}</footer>}
       </div>
     </div>
   );

@@ -63,6 +63,9 @@ function emPalavras(total) {
 
 export default function MeusLeiloes() {
   const { utilizador } = useAuth();
+  // Ver o comentário equivalente em MeusProdutos: sem aprovação não há
+  // formulário, porque a API recusa a criação na mesma.
+  const aprovado = utilizador.aprovado === 'aprovado';
   const { sucesso, erro } = useAvisos();
   // A lista está em tempo real: as licitações dos compradores aparecem aqui
   const { leiloes, recarregar } = useListaLeiloes(`?produtor=${utilizador._id}`);
@@ -194,6 +197,7 @@ export default function MeusLeiloes() {
     <>
       <NavProdutor titulo="Os meus leilões" />
 
+      {aprovado && (
       <div className="painel mb-4">
         <h2 className="h6">Agendar leilão</h2>
 
@@ -285,6 +289,7 @@ export default function MeusLeiloes() {
           </div>
         </form>
       </div>
+      )}
 
       <div className="painel">
         <h2 className="h6">Leilões ({leiloes.length})</h2>
@@ -316,7 +321,9 @@ export default function MeusLeiloes() {
                     <div className="small text-black-50">{dataPt(l.terminaEm)}</div>
                   </td>
                   <td className="text-end">
-                    <button className="btn btn-sm btn-outline-danger" onClick={() => setAApagar(l)}>Apagar</button>
+                    {aprovado && (
+                      <button className="btn btn-sm btn-outline-danger" onClick={() => setAApagar(l)}>Apagar</button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -341,13 +348,29 @@ export default function MeusLeiloes() {
             </>
           }
         >
-          <p className="mb-2">Vai agendar este leilão:</p>
-          <ul className="list-unstyled small mb-0">
-            <li className="fw-semibold">{form.lote}</li>
-            <li>Base {euros(Number(form.precoBase))} · incremento {euros(Number(form.incremento))}</li>
-            <li>Abre hoje às {form.hora}:{form.minuto}, daqui a {emPalavras(faltam)}</li>
-            <li>Dura {emPalavras(duracaoMinutos)} e fecha às {dataPt(terminaEm)}</li>
-          </ul>
+          <dl className="lista-resumo">
+            <dt>Lote</dt>
+            <dd>{form.lote}</dd>
+
+            <dt>Preço base</dt>
+            <dd>{euros(Number(form.precoBase))}</dd>
+
+            <dt>Incremento</dt>
+            <dd>{euros(Number(form.incremento))}</dd>
+
+            <dt>Abre hoje às</dt>
+            <dd>
+              {form.hora}:{form.minuto}
+              <div className="small fw-normal text-black-50">daqui a {emPalavras(faltam)}</div>
+            </dd>
+
+            <dt>Duração</dt>
+            <dd>{emPalavras(duracaoMinutos)}</dd>
+
+            <dt>Fecha a</dt>
+            <dd>{dataPt(terminaEm)}</dd>
+          </dl>
+
           <p className="small text-black-50 mt-3 mb-0">
             Depois de abrir, o leilão corre sozinho e os compradores podem licitar.
           </p>

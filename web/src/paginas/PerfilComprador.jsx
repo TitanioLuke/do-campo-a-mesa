@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, dataPt, euros } from '../servicos/api';
+import { api, artigos, dataPt, euros } from '../servicos/api';
 import { useAuth } from '../contexto/AuthContext';
 import { useAvisos } from '../contexto/AvisosContext';
 import { vazio } from '../servicos/validacao';
@@ -143,6 +143,7 @@ export default function PerfilComprador() {
                       <tr key={e._id}>
                         <td>
                           {e.produtor?.nome}
+                          <div className="small">{artigos(e.linhas)}</div>
                           <div className="small text-black-50">{dataPt(e.createdAt)}</div>
                         </td>
                         <td className="text-end">

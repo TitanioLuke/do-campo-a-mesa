@@ -119,6 +119,7 @@ async function seed() {
     conta({
       nome: 'Quinta do Vale', email: 'quinta@dcm.pt', papel: 'produtor',
       localidade: 'Ponte de Lima', telefone: '258 900 100', aprovado: 'aprovado',
+      morada: 'Rua do Souto 14, Arcozelo, 4990-150 Ponte de Lima',
       descricao: 'Produção familiar de hortícolas e fruta em modo biológico desde 1987. '
         + 'Trabalhamos 4 hectares de terra em Arcozelo e entregamos duas vezes por semana em Ponte de Lima e Viana.',
       latitude: 41.7574, longitude: -8.5875, data: haDias(230),
@@ -126,6 +127,7 @@ async function seed() {
     conta({
       nome: 'Horta da Serra', email: 'horta@dcm.pt', papel: 'produtor',
       localidade: 'Viana do Castelo', telefone: '258 900 200', aprovado: 'aprovado',
+      morada: 'Caminho da Serra 7, Perre, 4925-537 Viana do Castelo',
       descricao: 'Legumes da época colhidos no próprio dia da entrega. '
         + 'Fornecemos várias cantinas escolares e restaurantes do concelho.',
       latitude: 41.717, longitude: -8.7594, data: haDias(205),
@@ -133,6 +135,7 @@ async function seed() {
     conta({
       nome: 'Apiário do Minho', email: 'apiario@dcm.pt', papel: 'produtor',
       localidade: 'Arcos de Valdevez', telefone: '258 900 300', aprovado: 'aprovado',
+      morada: 'Lugar da Peneda 3, Gavieira, 4970-010 Arcos de Valdevez',
       descricao: 'Mel de urze, rosmaninho e castanheiro colhido na Serra da Peneda. '
         + '120 colmeias em apiários acima dos 700 metros.',
       latitude: 41.9029, longitude: -8.3645, data: haDias(180),
@@ -140,6 +143,7 @@ async function seed() {
     conta({
       nome: 'Queijaria do Lima', email: 'queijaria@dcm.pt', papel: 'produtor',
       localidade: 'Ponte da Barca', telefone: '258 900 400', aprovado: 'aprovado',
+      morada: 'Rua da Queijaria 22, 4980-614 Ponte da Barca',
       descricao: 'Queijos de cabra e de ovelha de fabrico artesanal, com cura em cave de pedra. '
         + 'Três gerações a fazer o mesmo queijo.',
       latitude: 41.8067, longitude: -8.3098, data: haDias(150),
@@ -147,6 +151,7 @@ async function seed() {
     conta({
       nome: 'Adega do Alvarinho', email: 'adega@dcm.pt', papel: 'produtor',
       localidade: 'Monção', telefone: '251 900 500', aprovado: 'aprovado',
+      morada: 'Quinta do Alvarinho, Mazedo, 4950-281 Monção',
       descricao: 'Pequena adega familiar na sub-região de Monção e Melgaço. '
         + 'Vinhos verdes de Alvarinho e Loureiro, vindima manual.',
       latitude: 42.0272, longitude: -8.4264, data: haDias(120),
@@ -154,6 +159,7 @@ async function seed() {
     conta({
       nome: 'Pomar das Caldas', email: 'pomar@dcm.pt', papel: 'produtor',
       localidade: 'Vizela', telefone: '253 900 600', aprovado: 'pendente',
+      morada: 'Rua do Pomar 9, São Miguel, 4815-563 Vizela',
       descricao: 'Pomar de cereja e ameixa à espera de validação para começar a vender.',
       latitude: 41.3733, longitude: -8.2956, data: haDias(3),
     }),

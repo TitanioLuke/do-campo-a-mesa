@@ -1,17 +1,30 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, dataPt } from '../servicos/api';
+import { useAvisos } from '../contexto/AvisosContext';
 import { useCarrinho } from '../contexto/CarrinhoContext';
 import { useAuth } from '../contexto/AuthContext';
 import CartaoProduto from '../componentes/CartaoProduto';
 import Estrelas from '../componentes/Estrelas';
+import Mapa from '../componentes/Mapa';
 
 export default function PaginaProdutor() {
   const { id } = useParams();
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState('');
   const { adicionar } = useCarrinho();
-  const { papel } = useAuth();
+  const { papel, temSessao } = useAuth();
+  const { sucesso, erro: avisarErro } = useAvisos();
+
+  /** Marca a avaliação para o administrador a ver. Igual ao da página do produto. */
+  async function denunciar(avaliacaoId) {
+    try {
+      await api.post(`/reviews/${avaliacaoId}/denunciar`);
+      sucesso('Avaliação enviada para moderação do administrador.');
+    } catch (e) {
+      avisarErro(e.message);
+    }
+  }
 
   useEffect(() => {
     api.get(`/producers/${id}`).then(setDados).catch((e) => setErro(e.message));
@@ -26,16 +39,15 @@ export default function PaginaProdutor() {
     ? (avaliacoes.reduce((s, a) => s + a.nota, 0) / avaliacoes.length).toFixed(1)
     : 0;
 
-  // Mapa embebido do OpenStreetMap (não precisa de chave nem de biblioteca extra)
-  const urlMapa = temMapa
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${produtor.longitude - 0.06}%2C${produtor.latitude - 0.04}%2C${produtor.longitude + 0.06}%2C${produtor.latitude + 0.04}&layer=mapnik&marker=${produtor.latitude}%2C${produtor.longitude}`
-    : null;
+  // O mapa é o mesmo componente do perfil do produtor, aqui só para ver: o
+  // pin está onde o produtor o deixou.
 
   return (
     <>
       <section className="destaque">
         <h1>{produtor.nome}</h1>
         <p className="mb-1">{produtor.localidade}{produtor.telefone && ` · Tel. ${produtor.telefone}`}</p>
+        {produtor.morada && <p className="small text-black-50 mb-1">{produtor.morada}</p>}
         {avaliacoes.length > 0 && (
           <p className="mb-0">
             <Estrelas nota={Number(notaMedia)} total={avaliacoes.length} /> <span className="ms-1">{notaMedia} / 5</span>
@@ -53,9 +65,9 @@ export default function PaginaProdutor() {
         <div className="col-12 col-lg-5">
           <div className="painel h-100">
             <h2 className="h6">Onde fica</h2>
-            {urlMapa ? (
+            {temMapa ? (
               <>
-                <iframe className="mapa" title={`Mapa de ${produtor.nome}`} src={urlMapa} loading="lazy" />
+                <Mapa latitude={produtor.latitude} longitude={produtor.longitude} />
                 <a
                   className="small d-block mt-2"
                   href={`https://www.openstreetmap.org/?mlat=${produtor.latitude}&mlon=${produtor.longitude}#map=14/${produtor.latitude}/${produtor.longitude}`}
@@ -99,7 +111,14 @@ export default function PaginaProdutor() {
                 </span>
               </div>
               <p className="mb-1">{a.comentario}</p>
-              <small className="text-black-50">{dataPt(a.createdAt)}</small>
+              <div className="d-flex justify-content-between align-items-center">
+                <small className="text-black-50">{dataPt(a.createdAt)}</small>
+                {temSessao && (
+                  <button className="btn btn-sm btn-link text-danger p-0" onClick={() => denunciar(a._id)}>
+                    denunciar
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ))}

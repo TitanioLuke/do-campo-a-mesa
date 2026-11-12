@@ -21,6 +21,10 @@ const VAZIO = {
 
 export default function MeusProdutos() {
   const { utilizador } = useAuth();
+  // Enquanto o administrador não aprovar o registo não há formulário: a API
+  // recusa na mesma, mas um formulário que só serve para receber um erro é
+  // pior do que não estar lá.
+  const aprovado = utilizador.aprovado === 'aprovado';
   const [produtos, setProdutos] = useState([]);
   const [form, setForm] = useState(VAZIO);
   const [aEditar, setAEditar] = useState(null); // _id do produto em edição
@@ -109,6 +113,7 @@ export default function MeusProdutos() {
     <>
       <NavProdutor titulo="Os meus produtos" />
 
+      {aprovado && (
       <div className="painel mb-4">
         <h2 className="h6">{aEditar ? 'Editar produto' : 'Novo produto'}</h2>
 
@@ -176,6 +181,7 @@ export default function MeusProdutos() {
           </div>
         </form>
       </div>
+      )}
 
       <div className="painel">
         <h2 className="h6">Catálogo ({produtos.length})</h2>
@@ -195,8 +201,14 @@ export default function MeusProdutos() {
                   <td>{euros(p.preco)} / {p.unidade}</td>
                   <td className={p.stock < 5 ? 'text-danger fw-bold' : ''}>{p.stock}</td>
                   <td className="text-end">
-                    <button className="btn btn-sm btn-outline-secondary me-1" onClick={() => editar(p)}>Editar</button>
-                    <button className="btn btn-sm btn-outline-danger" onClick={() => setAApagar(p)}>Apagar</button>
+                    {/* Sem aprovação a API recusa, por isso não se mostram botões
+                        que só dariam erro. */}
+                    {aprovado && (
+                      <>
+                        <button className="btn btn-sm btn-outline-secondary me-1" onClick={() => editar(p)}>Editar</button>
+                        <button className="btn btn-sm btn-outline-danger" onClick={() => setAApagar(p)}>Apagar</button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}

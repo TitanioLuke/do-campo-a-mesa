@@ -23,11 +23,15 @@ export default function NavProdutor({ titulo }) {
       {utilizador?.aprovado === 'pendente' && (
         <div className="alert alert-warning py-2">
           O seu registo ainda está <strong>pendente</strong> de validação pelo administrador.
-          Os seus produtos só aparecem no catálogo depois de aprovado.
+          Até ser aprovado não pode criar produtos nem leilões. Pode ir preparando a sua
+          página pública — é ela que o administrador vê para decidir.
         </div>
       )}
       {utilizador?.aprovado === 'rejeitado' && (
-        <div className="alert alert-danger py-2">O seu registo foi <strong>rejeitado</strong> pelo administrador.</div>
+        <div className="alert alert-danger py-2">
+          O seu registo foi <strong>rejeitado</strong> pelo administrador, por isso não pode
+          criar nem alterar produtos ou leilões.
+        </div>
       )}
 
       <ul className="nav nav-pills gap-1 mb-3">

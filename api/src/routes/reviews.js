@@ -78,7 +78,8 @@ router.post('/', autenticar('comprador'), async (req, res) => {
   }
 
   // O produtor é sempre guardado: no caso do produto, vem do próprio produto
-  const idProdutor = avaliacaoAProduto ? (await Product.findById(produto)).produtor : produtor;
+  const produtoAvaliado = avaliacaoAProduto ? await Product.findById(produto) : null;
+  const idProdutor = produtoAvaliado ? produtoAvaliado.produtor : produtor;
 
   const avaliacao = await Review.create({
     produto: produto || null,
@@ -90,6 +91,15 @@ router.post('/', autenticar('comprador'), async (req, res) => {
   });
 
   await atualizarMedia(produto);
+
+  // O produtor vê a avaliação chegar no sininho, sem recarregar a página
+  req.app.get('io').to(`user:${idProdutor}`).emit('nova-avaliacao', {
+    id: avaliacao._id,
+    nota: avaliacao.nota,
+    nome: avaliacao.nome,
+    alvo: produtoAvaliado ? produtoAvaliado.nome : null, // null = avaliação ao produtor
+  });
+
   res.status(201).location(`/api/reviews/${avaliacao._id}`).json(avaliacao);
 });
 
@@ -97,6 +107,13 @@ router.post('/', autenticar('comprador'), async (req, res) => {
 router.post('/:id/denunciar', autenticar(), async (req, res) => {
   const avaliacao = await Review.findByIdAndUpdate(req.params.id, { denunciada: true }, { new: true });
   if (!avaliacao) return res.status(404).json({ erro: 'Avaliação não encontrada' });
+
+  // A denúncia aparece no painel do administrador sem ele recarregar nada
+  req.app.get('io').to('admins').emit('avaliacao-denunciada', {
+    id: avaliacao._id,
+    nome: avaliacao.nome,
+  });
+
   res.json(avaliacao);
 });
 

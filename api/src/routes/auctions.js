@@ -2,6 +2,7 @@ const express = require('express');
 const Auction = require('../models/Auction');
 const Bid = require('../models/Bid');
 const autenticar = require('../middleware/auth');
+const produtorAprovado = require('../middleware/produtorAprovado');
 
 const router = express.Router();
 
@@ -68,7 +69,7 @@ router.get('/:id/bids', async (req, res) => {
  * `licitacaoAtual.valor` começa no preço base: a 1.ª licitação válida é
  * precoBase + incremento.
  */
-router.post('/', autenticar('produtor'), async (req, res) => {
+router.post('/', autenticar('produtor'), produtorAprovado, async (req, res) => {
   const { lote, descricao, imagem, precoBase, incremento, duracaoMinutos } = req.body;
 
   if (!lote || precoBase === undefined || !duracaoMinutos || !req.body.comecaEm) {
@@ -127,7 +128,7 @@ router.post('/', autenticar('produtor'), async (req, res) => {
 });
 
 /** DELETE /api/auctions/:id — o produtor (ou o admin) remove um leilão. */
-router.delete('/:id', autenticar('produtor', 'admin'), async (req, res) => {
+router.delete('/:id', autenticar('produtor', 'admin'), produtorAprovado, async (req, res) => {
   const filtro = { _id: req.params.id };
   if (req.user.papel === 'produtor') filtro.produtor = req.user.id;
 

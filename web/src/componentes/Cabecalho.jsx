@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexto/AuthContext';
 import { useCarrinho } from '../contexto/CarrinhoContext';
 import { useSocket } from '../contexto/SocketContext';
+import Sininho from './Sininho';
 
 // Para onde o nome do utilizador leva, conforme o papel
 const PERFIL = { comprador: '/perfil', produtor: '/produtor/perfil' };
@@ -76,6 +77,9 @@ export default function Cabecalho() {
 
               {utilizador ? (
                 <>
+                  <li className="nav-item d-flex align-items-center">
+                    <Sininho />
+                  </li>
                   <li className="nav-item">
                     {PERFIL[papel] ? (
                       <NavLink

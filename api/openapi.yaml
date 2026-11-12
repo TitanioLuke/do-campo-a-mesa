@@ -150,7 +150,7 @@ paths:
               schema: { $ref: '#/components/schemas/Produto' }
         '400': { description: Dados inválidos }
         '401': { description: Token em falta ou inválido }
-        '403': { description: Sem permissão (não é produtor) }
+        '403': { description: Sem permissão (não é produtor, ou o registo ainda não foi aprovado pelo administrador) }
 
   /products/{id}:
     parameters:

@@ -92,6 +92,14 @@ export const api = {
 export const euros = (valor) =>
   Number(valor || 0).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' });
 
+/**
+ * As linhas de uma encomenda numa frase: "2 × Kiwi, 1 × Mel de Urze".
+ * Os nomes são os que foram copiados para a encomenda no momento da compra,
+ * por isso continuam certos mesmo que o produto mude de nome ou desapareça.
+ */
+export const artigos = (linhas = []) =>
+  linhas.map((l) => `${l.quantidade} × ${l.nome}`).join(', ');
+
 /** Formata uma data no formato português. */
 export const dataPt = (valor) =>
   new Date(valor).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });

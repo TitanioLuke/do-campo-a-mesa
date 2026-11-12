@@ -1,6 +1,7 @@
 const express = require('express');
 const upload = require('../middleware/upload');
 const autenticar = require('../middleware/auth');
+const produtorAprovado = require('../middleware/produtorAprovado');
 
 const router = express.Router();
 
@@ -25,7 +26,7 @@ function receberImagem(req, res, next) {
  * aplicação fosse aberta a partir do telemóvel ou publicada noutro domínio.
  * Guardando o caminho, é quem mostra a imagem que lhe junta o servidor.
  */
-router.post('/', autenticar('produtor', 'admin'), receberImagem, (req, res) => {
+router.post('/', autenticar('produtor', 'admin'), produtorAprovado, receberImagem, (req, res) => {
   if (!req.file) return res.status(400).json({ erro: 'Nenhuma imagem enviada' });
 
   res.status(201).json({ url: `/uploads/${req.file.filename}` });
