@@ -5,6 +5,12 @@ Mercado digital de produtores locais com leilões em tempo real.
 Trabalho prático individual de **Desenvolvimento Web e para a Cloud** — Mestrado em Engenharia
 Informática, IPVC–ESTG.
 
+**Aplicação publicada:** https://do-campo-a-mesa-six.vercel.app
+**API:** https://do-campo-a-mesa-api-1rju.onrender.com · **Documentação:** [/api-docs](https://do-campo-a-mesa-api-1rju.onrender.com/api-docs)
+
+> O alojamento da API é gratuito e adormece ao fim de 15 minutos sem pedidos. O primeiro
+> acesso depois disso demora perto de um minuto a responder; os seguintes são imediatos.
+
 A plataforma liga pequenos produtores agrícolas da região (hortícolas, fruta, mel, vinho, queijo)
 a consumidores e à restauração local. Os produtores publicam produtos, os compradores fazem
 encomendas e, para lotes sazonais ou excedentes, a plataforma organiza **leilões em direto** com
@@ -1057,9 +1063,18 @@ Duas consequências que não se veem à primeira:
 
 ## 15. Deployment na Cloud
 
-Este passo era **opcional** no enunciado. A aplicação está preparada para ser publicada e a
-configuração está versionada no repositório, em `render.yaml` e `web/vercel.json` — não é uma
-intenção escrita no relatório, são ficheiros que as plataformas leem.
+Este passo era **opcional** no enunciado. A aplicação **está publicada** e a configuração está
+versionada no repositório, em `render.yaml` e `web/vercel.json` — não é uma intenção escrita no
+relatório, são ficheiros que as plataformas leem.
+
+| | Endereço |
+| --- | --- |
+| Aplicação (Vercel) | https://do-campo-a-mesa-six.vercel.app |
+| API (Render) | https://do-campo-a-mesa-api-1rju.onrender.com |
+| Documentação OpenAPI | https://do-campo-a-mesa-api-1rju.onrender.com/api-docs |
+
+Os sufixos `-six` e `-1rju` foram acrescentados pelas plataformas porque os nomes simples já
+estavam ocupados por outras pessoas — os subdomínios são partilhados por todos os utilizadores.
 
 **Modelo escolhido: PaaS + BaaS.**
 
