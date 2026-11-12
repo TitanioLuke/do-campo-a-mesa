@@ -11,6 +11,12 @@ const router = express.Router();
 const MINUTOS_ATE_COMECAR_MIN = 3;
 const MINUTOS_ATE_COMECAR_MAX = 60;
 
+// Quanto pode durar um leilão. A API fala sempre em minutos — é a unidade mais
+// pequena que faz sentido aqui e evita ter de interpretar unidades no servidor.
+// O formulário é que deixa escolher minutos, horas ou dias e faz a conversão.
+const DURACAO_MINUTOS_MIN = 1;
+const DURACAO_MINUTOS_MAX = 7 * 24 * 60; // uma semana
+
 /**
  * GET /api/auctions — lista de leilões.
  * Query: estado (agendado|ativo|terminado), produtor,
@@ -73,8 +79,11 @@ router.post('/', autenticar('produtor'), async (req, res) => {
       erro: `O leilão tem de começar daqui a ${MINUTOS_ATE_COMECAR_MIN} a ${MINUTOS_ATE_COMECAR_MAX} minutos`,
     });
   }
-  if (Number(duracaoMinutos) < 1) {
-    return res.status(400).json({ erro: 'A duração tem de ser de pelo menos 1 minuto' });
+  const duracao = Number(duracaoMinutos);
+  if (!Number.isInteger(duracao) || duracao < DURACAO_MINUTOS_MIN || duracao > DURACAO_MINUTOS_MAX) {
+    return res.status(400).json({
+      erro: `A duração tem de ser um número inteiro de minutos, entre ${DURACAO_MINUTOS_MIN} e ${DURACAO_MINUTOS_MAX} (uma semana)`,
+    });
   }
 
   const comecaEm = new Date(Date.now() + ateComecar * 60 * 1000);
@@ -88,7 +97,7 @@ router.post('/', autenticar('produtor'), async (req, res) => {
     incremento: Number(incremento) || 5,
     licitacaoAtual: { valor: Number(precoBase), comprador: null, nome: '' },
     comecaEm,
-    terminaEm: new Date(comecaEm.getTime() + Number(duracaoMinutos) * 60 * 1000),
+    terminaEm: new Date(comecaEm.getTime() + duracao * 60 * 1000),
     estado: 'agendado',
   });
 

@@ -184,6 +184,8 @@ ainda não foi validado: é o que permite demonstrar a aprovação no painel do 
 - Encomendas recebidas, com filtro por estado e botão para avançar o estado
   (o comprador é notificado na hora).
 - **Agendar leilões** (lote, preço base, incremento, quanto falta para abrir e duração).
+  A duração escreve-se **em minutos, horas ou dias**, até ao máximo de uma semana — ninguém
+  tem de converter 4 dias em 5760 minutos de cabeça.
   O leilão abre e fecha sozinho à hora marcada.
 - Editar a sua **página pública** (nome, concelho, telefone e apresentação), com
   pré-visualização ao lado do formulário. O mapa é colocado automaticamente no concelho
@@ -807,6 +809,16 @@ leilão em direto onde cada segundo conta.
 O servidor envia apenas `terminaEm` (uma data absoluta). É cada cliente que calcula o tempo que
 falta, de segundo a segundo, no componente `Contador`. Assim não é preciso sincronizar
 contadores entre clientes: todos derivam o mesmo valor da mesma data.
+
+A unidade mostrada **afina à medida que o fim se aproxima**:
+
+| Falta | Mostra | Porquê |
+| --- | --- | --- |
+| mais de um dia | `2d 23h` | os segundos de um leilão que ainda dura dois dias não dizem nada |
+| entre 1 hora e 1 dia | `5h 07min` | o minuto chega para decidir se vale a pena voltar mais tarde |
+| menos de uma hora | `12:45` | aqui cada segundo conta, e é quando as licitações aparecem |
+
+O cálculo continua a ser feito ao segundo; o que muda é só o que se escreve no ecrã.
 
 ### 14.7. Abertura e fecho automáticos
 

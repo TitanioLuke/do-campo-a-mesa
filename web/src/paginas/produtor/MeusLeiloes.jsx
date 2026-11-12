@@ -8,9 +8,14 @@ import NavProdutor from './NavProdutor';
 import Contador from '../../componentes/Contador';
 import ModalConfirmar from '../../componentes/ModalConfirmar';
 
+// O produtor escolhe a unidade que lhe dá jeito; a API recebe sempre minutos.
+// Assim ninguém tem de fazer contas de cabeça para um leilão de 4 dias.
+const UNIDADES = { minutos: 1, horas: 60, dias: 60 * 24 };
+const DURACAO_MAXIMA_MINUTOS = 7 * 24 * 60; // uma semana, o mesmo limite do servidor
+
 const VAZIO = {
   lote: '', descricao: '', precoBase: '', incremento: 5,
-  minutosAteComecar: 5, duracaoMinutos: 30, imagem: '',
+  minutosAteComecar: 5, duracaoValor: 30, duracaoUnidade: 'minutos', imagem: '',
 };
 
 export default function MeusLeiloes() {
@@ -23,6 +28,17 @@ export default function MeusLeiloes() {
   const [aApagar, setAApagar] = useState(null);
 
   const mudar = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
+
+  // Quanto vale, nesta unidade, o limite de uma semana
+  const maximo = DURACAO_MAXIMA_MINUTOS / UNIDADES[form.duracaoUnidade];
+
+  // Ao trocar de unidade, 30 minutos não podem virar 30 dias: o valor é
+  // encurtado ao máximo permitido pela unidade nova.
+  function mudarUnidade(evento) {
+    const duracaoUnidade = evento.target.value;
+    const limite = DURACAO_MAXIMA_MINUTOS / UNIDADES[duracaoUnidade];
+    setForm({ ...form, duracaoUnidade, duracaoValor: Math.min(Number(form.duracaoValor) || 1, limite) });
+  }
 
   async function escolherImagem(evento) {
     const ficheiro = evento.target.files?.[0];
@@ -38,12 +54,13 @@ export default function MeusLeiloes() {
   async function submeter(evento) {
     evento.preventDefault();
     try {
+      const { duracaoValor, duracaoUnidade, ...resto } = form;
       await api.post('/auctions', {
-        ...form,
+        ...resto,
         precoBase: Number(form.precoBase),
         incremento: Number(form.incremento),
         minutosAteComecar: Number(form.minutosAteComecar),
-        duracaoMinutos: Number(form.duracaoMinutos),
+        duracaoMinutos: Number(duracaoValor) * UNIDADES[duracaoUnidade],
       });
       sucesso(`Leilão "${form.lote}" agendado para daqui a ${form.minutosAteComecar} minutos.`);
       setForm(VAZIO);
@@ -73,7 +90,7 @@ export default function MeusLeiloes() {
         <h2 className="h6">Agendar leilão</h2>
 
         <form onSubmit={submeter} className="row g-3">
-          <div className="col-12 col-md-4">
+          <div className="col-12 col-md-3">
             <label className="form-label small mb-1" htmlFor="lote">Lote</label>
             <input id="lote" className="form-control" required placeholder="Ex.: Lote de 50 kg de kiwi" value={form.lote} onChange={mudar('lote')} />
           </div>
@@ -90,9 +107,31 @@ export default function MeusLeiloes() {
             <input id="comeca" type="number" min="3" max="60" className="form-control" required value={form.minutosAteComecar} onChange={mudar('minutosAteComecar')} />
             <small className="text-black-50">entre 3 e 60</small>
           </div>
-          <div className="col-6 col-md-2">
-            <label className="form-label small mb-1" htmlFor="duracao">Duração (min)</label>
-            <input id="duracao" type="number" min="1" className="form-control" required value={form.duracaoMinutos} onChange={mudar('duracaoMinutos')} />
+          <div className="col-12 col-md-3">
+            <label className="form-label small mb-1" htmlFor="duracao">Duração</label>
+            <div className="input-group">
+              <input
+                id="duracao"
+                type="number"
+                min="1"
+                max={maximo}
+                className="form-control"
+                required
+                value={form.duracaoValor}
+                onChange={mudar('duracaoValor')}
+              />
+              <select
+                className="form-select"
+                aria-label="Unidade da duração"
+                value={form.duracaoUnidade}
+                onChange={mudarUnidade}
+              >
+                <option value="minutos">minutos</option>
+                <option value="horas">horas</option>
+                <option value="dias">dias</option>
+              </select>
+            </div>
+            <small className="text-black-50">no máximo uma semana</small>
           </div>
 
           <div className="col-12">

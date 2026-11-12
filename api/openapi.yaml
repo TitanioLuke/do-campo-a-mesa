@@ -349,7 +349,8 @@ paths:
       summary: Agendar leilão (apenas produtor)
       description: >
         O leilão nasce no estado `agendado` e abre daqui a `minutosAteComecar`
-        (entre 3 e 60), ficando `ativo` durante `duracaoMinutos`. É o servidor
+        (entre 3 e 60), ficando `ativo` durante `duracaoMinutos` (até uma
+        semana). É o servidor
         que o abre e o fecha na hora certa.
       security: [{ bearerAuth: [] }]
       requestBody:
@@ -366,7 +367,15 @@ paths:
                 precoBase: { type: number }
                 incremento: { type: number, default: 5 }
                 minutosAteComecar: { type: integer, minimum: 3, maximum: 60 }
-                duracaoMinutos: { type: integer, minimum: 1 }
+                duracaoMinutos:
+                  type: integer
+                  minimum: 1
+                  maximum: 10080
+                  description: >-
+                    Duração em minutos, de 1 minuto a 10080 (uma semana).
+                    A API fala sempre em minutos; é o formulário do produtor que
+                    deixa escrever a duração em minutos, horas ou dias.
+                  example: 5760
       responses:
         '201':
           description: Leilão agendado

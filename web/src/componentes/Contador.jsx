@@ -31,12 +31,14 @@ export default function Contador({ terminaEm, aoTerminar }) {
 
   if (ms === 0) return <span className="relogio">terminado</span>;
 
-  // Leilões longos mostram "3d 04:12:08"; os curtos só "12:08" ou "04:12:08"
-  return (
-    <span className="relogio">
-      {dias > 0 && `${dias}d `}
-      {(dias > 0 || horas > 0) && `${dois(horas)}:`}
-      {dois(minutos)}:{dois(segundos)}
-    </span>
-  );
+  // A unidade afina à medida que o fim se aproxima: "2d 23h" enquanto falta
+  // muito, "5h 42min" no último dia e "12:45" na última hora. Os segundos só
+  // aparecem quando já contam para alguma coisa — ninguém precisa de os ver
+  // num leilão que ainda dura dois dias.
+  let texto;
+  if (dias > 0) texto = `${dias}d ${horas}h`;
+  else if (horas > 0) texto = `${horas}h ${dois(minutos)}min`;
+  else texto = `${dois(minutos)}:${dois(segundos)}`;
+
+  return <span className="relogio">{texto}</span>;
 }
