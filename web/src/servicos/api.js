@@ -2,7 +2,11 @@
 // Todos os componentes passam por aqui, por isso o token e o tratamento
 // de erros ficam num sítio só.
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Em produção, o endereço da API vem do ambiente (VITE_API_URL). Em
+// desenvolvimento não é preciso configurar nada: a API é procurada na mesma
+// máquina que serviu esta página, na porta 3000. Assim funciona tanto em
+// localhost como no telemóvel, onde "localhost" seria o próprio telemóvel.
+export const API_URL = import.meta.env.VITE_API_URL || `http://${location.hostname}:3000`;
 
 function token() {
   return localStorage.getItem('token');

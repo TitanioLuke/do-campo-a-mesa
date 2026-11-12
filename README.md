@@ -111,8 +111,21 @@ cd web && npm run dev
 
 - Aplicação: <http://localhost:5173>
 
-> O ficheiro `web/.env` tem `VITE_API_URL=http://localhost:3000`. É a única configuração que o
-> frontend precisa para apontar para outra API (por exemplo, a versão publicada na Cloud).
+**Ver no telemóvel.** O `vite.config.js` manda o servidor atender também no IP da máquina,
+por isso o terminal mostra duas moradas:
+
+```
+➜  Local:   http://localhost:5173/
+➜  Network: http://192.168.1.74:5173/      ← esta, no telemóvel
+```
+
+Basta o telemóvel estar na mesma rede Wi-Fi. Não é preciso configurar o endereço da API:
+a aplicação procura-a na mesma máquina que serviu a página (ver `web/src/servicos/api.js`),
+e por isso funciona tanto em `localhost` como pelo IP — no telemóvel, `localhost` seria o
+próprio telemóvel.
+
+> `VITE_API_URL` só é preciso para apontar para **outra** API, como a versão publicada na
+> Cloud. É o que a Vercel define na publicação.
 
 ---
 
