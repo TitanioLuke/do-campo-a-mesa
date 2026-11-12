@@ -9,7 +9,7 @@ import { useAvisos } from '../contexto/AvisosContext';
 export default function Registo() {
   const [dados, setDados] = useState({
     nome: '', email: '', password: '', papel: 'comprador',
-    localidade: '', descricao: '', telefone: '',
+    localidade: '', descricao: '', telefone: '', morada: '',
   });
   const [aEnviar, setAEnviar] = useState(false);
 
@@ -30,8 +30,9 @@ export default function Registo() {
     try {
       const corpo = { ...dados };
       if (corpo.papel === 'comprador') {
-        delete corpo.localidade; delete corpo.descricao; delete corpo.telefone;
+        delete corpo.localidade; delete corpo.descricao;
       } else {
+        delete corpo.morada;
         // As coordenadas do mapa saem do concelho escolhido; ninguém as escreve
         Object.assign(corpo, coordenadasDe(corpo.localidade) ?? {});
       }
@@ -89,6 +90,29 @@ export default function Registo() {
                 />
               </div>
 
+              <div className="col-12 col-md-6">
+                <label className="form-label" htmlFor="telefone">Telefone <span className="text-black-50">(opcional)</span></label>
+                <input id="telefone" className="form-control" value={dados.telefone} onChange={mudar('telefone')} />
+              </div>
+
+              {dados.papel === 'comprador' && (
+                <div className="col-12">
+                  <label className="form-label" htmlFor="morada">Morada <span className="text-black-50">(opcional)</span></label>
+                  <textarea
+                    id="morada"
+                    className="form-control"
+                    rows="2"
+                    placeholder="Rua, número, código postal e localidade"
+                    value={dados.morada}
+                    onChange={mudar('morada')}
+                  />
+                  <small className="text-black-50">
+                    Fica guardada no seu perfil e aparece já preenchida quando escolher entrega ao domicílio.
+                    Pode sempre usar outra morada numa encomenda.
+                  </small>
+                </div>
+              )}
+
               {dados.papel === 'produtor' && (
                 <>
                   <div className="col-12 col-md-6">
@@ -100,10 +124,6 @@ export default function Registo() {
                       obrigatorio
                     />
                     <small className="text-black-50">É o que os compradores veem e por onde o encontram nos filtros.</small>
-                  </div>
-                  <div className="col-12 col-md-6">
-                    <label className="form-label" htmlFor="telefone">Telefone</label>
-                    <input id="telefone" className="form-control" value={dados.telefone} onChange={mudar('telefone')} />
                   </div>
                   <div className="col-12">
                     <label className="form-label" htmlFor="descricao">Apresentação</label>

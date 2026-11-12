@@ -36,9 +36,13 @@ paths:
                 email: { type: string, example: ana@dcm.pt }
                 password: { type: string, example: "123456" }
                 papel: { type: string, enum: [comprador, produtor] }
+                telefone: { type: string, example: "258 821 100" }
+                morada:
+                  type: string
+                  description: Morada do comprador; fica no perfil e preenche a entrega das encomendas.
+                  example: Rua das Flores 12, 4900-315 Viana do Castelo
                 localidade: { type: string }
                 descricao: { type: string }
-                telefone: { type: string }
                 latitude: { type: number }
                 longitude: { type: number }
       responses:
@@ -95,9 +99,10 @@ paths:
               type: object
               properties:
                 nome: { type: string }
+                telefone: { type: string }
+                morada: { type: string }
                 localidade: { type: string }
                 descricao: { type: string }
-                telefone: { type: string }
                 latitude: { type: number }
                 longitude: { type: number }
       responses:
@@ -602,9 +607,10 @@ components:
         nome: { type: string }
         email: { type: string }
         papel: { type: string, enum: [comprador, produtor, admin] }
+        telefone: { type: string }
+        morada: { type: string }
         localidade: { type: string }
         descricao: { type: string }
-        telefone: { type: string }
         latitude: { type: number }
         longitude: { type: number }
         aprovado: { type: string, enum: [pendente, aprovado, rejeitado] }

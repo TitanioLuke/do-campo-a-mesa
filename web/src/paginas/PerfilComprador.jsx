@@ -13,9 +13,21 @@ export default function PerfilComprador() {
   const { utilizador, atualizar } = useAuth();
   const { sucesso, erro } = useAvisos();
 
-  const [nome, setNome] = useState(utilizador.nome);
+  const [dados, setDados] = useState({
+    nome: utilizador.nome,
+    telefone: utilizador.telefone || '',
+    morada: utilizador.morada || '',
+  });
   const [encomendas, setEncomendas] = useState([]);
   const [aGuardar, setAGuardar] = useState(false);
+
+  const mudar = (campo) => (e) => setDados({ ...dados, [campo]: e.target.value });
+
+  // O botão só fica ativo se houver mesmo alguma coisa alterada
+  const alterado =
+    dados.nome !== utilizador.nome ||
+    dados.telefone !== (utilizador.telefone || '') ||
+    dados.morada !== (utilizador.morada || '');
 
   useEffect(() => {
     api.get('/orders').then(setEncomendas).catch(() => {});
@@ -37,7 +49,7 @@ export default function PerfilComprador() {
     evento.preventDefault();
     setAGuardar(true);
     try {
-      atualizar(await api.put('/auth/me', { nome }));
+      atualizar(await api.put('/auth/me', dados));
       sucesso('Perfil atualizado.');
     } catch (e) {
       erro(e.message);
@@ -67,13 +79,7 @@ export default function PerfilComprador() {
             <form onSubmit={submeter}>
               <div className="mb-3">
                 <label className="form-label small mb-1" htmlFor="nome">Nome</label>
-                <input
-                  id="nome"
-                  className="form-control"
-                  required
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                />
+                <input id="nome" className="form-control" required value={dados.nome} onChange={mudar('nome')} />
                 <small className="text-black-50">
                   É o nome que aparece nas avaliações que escrever e nas salas de leilão.
                 </small>
@@ -84,11 +90,31 @@ export default function PerfilComprador() {
                 <input id="email" className="form-control" value={utilizador.email} disabled />
               </div>
 
+              <div className="mb-3">
+                <label className="form-label small mb-1" htmlFor="telefone">Telefone</label>
+                <input id="telefone" className="form-control" value={dados.telefone} onChange={mudar('telefone')} />
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label small mb-1" htmlFor="morada">Morada</label>
+                <textarea
+                  id="morada"
+                  className="form-control"
+                  rows="2"
+                  placeholder="Rua, número, código postal e localidade"
+                  value={dados.morada}
+                  onChange={mudar('morada')}
+                />
+                <small className="text-black-50">
+                  Aparece já preenchida no carrinho quando escolher entrega ao domicílio.
+                </small>
+              </div>
+
               <p className="small text-black-50">
                 Conta de <strong>{utilizador.papel}</strong>, criada a {dataPt(utilizador.createdAt)}.
               </p>
 
-              <button className="btn btn-verde" disabled={aGuardar || nome === utilizador.nome}>
+              <button className="btn btn-verde" disabled={aGuardar || !alterado}>
                 {aGuardar ? 'A guardar…' : 'Guardar alterações'}
               </button>
             </form>

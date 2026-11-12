@@ -49,10 +49,14 @@ Ecrã: página inicial, catálogo visível.
 1. Entrar como **ana@dcm.pt** (botão de demonstração)
 2. Juntar dois produtos de **produtores diferentes** ao carrinho
 3. Abrir o carrinho → ler em voz alta: *"Serão criadas 2 encomendas, uma por produtor"*
-4. Finalizar → vai para "As minhas encomendas"
+4. Em **Entrega**, escolher *Entrega na morada* → a morada que a Ana guardou no registo
+   aparece já escolhida; apontar para a opção *Entregar noutra morada*
+5. Finalizar → vai para "As minhas encomendas"
 
 > "O carrinho pode ter produtos de vários produtores, mas é o produtor que muda o estado
-> da encomenda. Por isso o servidor divide em uma encomenda por produtor."
+> da encomenda. Por isso o servidor divide em uma encomenda por produtor. A morada vem do
+> perfil, mas é copiada para dentro da encomenda — se a Ana se mudar amanhã, as encomendas
+> antigas continuam a dizer para onde foram."
 
 **Deixa esta janela nas encomendas.** Vais precisar dela a seguir.
 

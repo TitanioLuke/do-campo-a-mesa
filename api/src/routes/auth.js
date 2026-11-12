@@ -42,7 +42,8 @@ function gerarToken(utilizador) {
  * O produtor fica "pendente" até o administrador validar o registo.
  */
 router.post('/registo', limiteTentativas, async (req, res) => {
-  const { nome, email, password, papel, localidade, descricao, telefone, latitude, longitude } = req.body;
+  const { nome, email, password, papel, localidade, descricao, telefone, morada, latitude, longitude } =
+    req.body;
 
   if (!nome || !email || !password) {
     return res.status(400).json({ erro: 'Nome, email e password são obrigatórios' });
@@ -66,6 +67,7 @@ router.post('/registo', limiteTentativas, async (req, res) => {
     localidade,
     descricao,
     telefone,
+    morada,
     latitude,
     longitude,
     // só o produtor precisa de validação do administrador
@@ -100,7 +102,7 @@ router.get('/me', autenticar(), async (req, res) => {
 
 /** PUT /api/auth/me — o utilizador atualiza o seu próprio perfil. */
 router.put('/me', autenticar(), async (req, res) => {
-  const camposPermitidos = ['nome', 'localidade', 'descricao', 'telefone', 'latitude', 'longitude'];
+  const camposPermitidos = ['nome', 'localidade', 'descricao', 'telefone', 'morada', 'latitude', 'longitude'];
   const alteracoes = {};
   for (const campo of camposPermitidos) {
     if (req.body[campo] !== undefined) alteracoes[campo] = req.body[campo];

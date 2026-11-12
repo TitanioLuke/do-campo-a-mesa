@@ -159,12 +159,33 @@ async function seed() {
     }),
   ]);
 
+  // Moradas guardadas no perfil do comprador. São as mesmas que aparecem nas
+  // encomendas com entrega ao domicílio, porque é isso que a aplicação faz:
+  // copia a morada do perfil para a encomenda no momento da compra.
+  // O Bruno e o Diogo ficam sem morada de propósito — só levantam no produtor,
+  // e servem para mostrar o carrinho de quem ainda não guardou nenhuma.
+  const MORADA_ANA = 'Rua das Flores 12, 4900-315 Viana do Castelo';
+  const MORADA_CARLA = 'Av. Central 88, 4710-229 Braga';
+  const MORADA_LAGAR = 'Largo do Lagar 4, 4990-074 Ponte de Lima';
+
   const [ana, bruno, carla, diogo, lagar] = await inserir(User, [
-    conta({ nome: 'Ana Silva', email: 'ana@dcm.pt', papel: 'comprador', data: haDias(190) }),
-    conta({ nome: 'Bruno Costa', email: 'bruno@dcm.pt', papel: 'comprador', data: haDias(165) }),
-    conta({ nome: 'Carla Mendes', email: 'carla@dcm.pt', papel: 'comprador', data: haDias(95) }),
+    conta({
+      nome: 'Ana Silva', email: 'ana@dcm.pt', papel: 'comprador',
+      telefone: '258 821 100', morada: MORADA_ANA, data: haDias(190),
+    }),
+    conta({
+      nome: 'Bruno Costa', email: 'bruno@dcm.pt', papel: 'comprador',
+      telefone: '253 412 880', data: haDias(165),
+    }),
+    conta({
+      nome: 'Carla Mendes', email: 'carla@dcm.pt', papel: 'comprador',
+      telefone: '253 207 441', morada: MORADA_CARLA, data: haDias(95),
+    }),
     conta({ nome: 'Diogo Pereira', email: 'diogo@dcm.pt', papel: 'comprador', data: haDias(60) }),
-    conta({ nome: 'Restaurante O Lagar', email: 'lagar@dcm.pt', papel: 'comprador', data: haDias(45) }),
+    conta({
+      nome: 'Restaurante O Lagar', email: 'lagar@dcm.pt', papel: 'comprador',
+      telefone: '258 744 310', morada: MORADA_LAGAR, data: haDias(45),
+    }),
   ]);
 
   // ========================= PRODUTOS =========================
@@ -234,16 +255,13 @@ async function seed() {
     data: haDias(dias),
   });
 
-  const MORADA_ANA = 'Rua das Flores 12, Viana do Castelo';
-  const MORADA_LAGAR = 'Largo do Lagar 4, Ponte de Lima';
-
   await inserir(Order, [
     // --- entregues (histórico) ---
     enc(ana, quinta, [[prd['Kiwi Hayward'], 3], [prd['Couve Portuguesa'], 2]], 'entregue', 42, 'entrega', MORADA_ANA),
     enc(ana, apiario, [[prd['Mel de Urze'], 2]], 'entregue', 35, 'levantamento'),
     enc(bruno, horta, [[prd['Batata de Trás-os-Montes'], 10], [prd['Cenoura'], 3]], 'entregue', 33, 'levantamento'),
     enc(bruno, queijaria, [[prd['Queijo de Cabra Curado'], 1], [prd['Requeijão'], 2]], 'entregue', 28, 'levantamento'),
-    enc(carla, adega, [[prd['Alvarinho Reserva 2023'], 2], [prd['Vinho Verde Loureiro 2024'], 3]], 'entregue', 26, 'entrega', 'Av. Central 88, Braga'),
+    enc(carla, adega, [[prd['Alvarinho Reserva 2023'], 2], [prd['Vinho Verde Loureiro 2024'], 3]], 'entregue', 26, 'entrega', MORADA_CARLA),
     enc(lagar, horta, [[prd['Tomate Coração de Boi'], 8], [prd['Cebola Roxa'], 5], [prd['Curgete'], 6]], 'entregue', 21, 'entrega', MORADA_LAGAR),
     enc(ana, quinta, [[prd['Maçã Bravo de Esmolfe'], 2], [prd['Pera Rocha'], 2]], 'entregue', 18, 'entrega', MORADA_ANA),
     enc(diogo, apiario, [[prd['Mel de Castanheiro'], 1], [prd['Pólen Fresco'], 1]], 'entregue', 14, 'levantamento'),

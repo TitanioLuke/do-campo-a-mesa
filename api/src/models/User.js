@@ -17,10 +17,15 @@ const userSchema = new mongoose.Schema(
       default: 'comprador',
     },
 
+    // --- Contactos (os dois papéis) ---
+    // O produtor mostra o telefone na sua página pública; o comprador guarda a
+    // morada no registo para não a ter de escrever em cada encomenda.
+    telefone: { type: String, trim: true },
+    morada: { type: String, trim: true },
+
     // --- Campos usados apenas quando papel === 'produtor' ---
     localidade: { type: String, trim: true },
     descricao: { type: String, trim: true },
-    telefone: { type: String, trim: true },
     // Coordenadas para o mapa da página pública do produtor
     latitude: { type: Number },
     longitude: { type: Number },

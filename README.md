@@ -156,7 +156,12 @@ ainda não foi validado: é o que permite demonstrar a aprovação no painel do 
 
 ### Comprador
 
-- Carrinho com alteração de quantidades e escolha entre levantamento ou entrega.
+- **Registo com telefone e morada** (ambos opcionais). A morada fica no perfil e evita
+  escrevê-la em cada compra.
+- Carrinho com alteração de quantidades e escolha entre levantamento no produtor ou entrega
+  ao domicílio. Na entrega, quem tem morada no perfil escolhe entre **essa morada** e
+  **outra morada** (uma prenda para alguém, o restaurante em vez de casa); quem ainda não
+  guardou nenhuma escreve-a ali e é convidado a guardá-la no perfil.
 - Finalizar a encomenda: o carrinho pode ter produtos de vários produtores e é criada
   **uma encomenda por produtor**.
 - Acompanhar os estados (`pendente → confirmada → pronta → entregue`) com barra de progresso
@@ -167,8 +172,8 @@ ainda não foi validado: é o que permite demonstrar a aprovação no painel do 
 - Entrar na sala de um leilão e licitar: contagem decrescente, número de participantes,
   histórico de licitações, atalhos que licitam logo o valor seguinte e validação do
   mínimo no servidor.
-- **Perfil próprio** com os seus dados e um resumo das compras (encomendas, produtores a
-  quem comprou e total gasto).
+- **Perfil próprio** onde altera nome, telefone e morada, com um resumo das compras
+  (encomendas, produtores a quem comprou e total gasto).
 
 ### Produtor
 
@@ -508,6 +513,7 @@ referenciar o que é partilhado, muda com frequência ou cresce indefinidamente.
 | Decisão | Porquê |
 | --- | --- |
 | **`orders.linhas` embebidas** | As linhas são poucas (uma encomenda tem 1 a 10 artigos), nunca são lidas sem a encomenda e nunca são partilhadas. Em cada linha guardo uma **cópia** de `nome` e `precoUnit`: se o produtor mudar o preço amanhã, a encomenda de hoje mantém o preço que o comprador pagou. |
+| **`orders.entrega.morada` copiada** | Pelo mesmo motivo. A morada entra na encomenda como texto, não como referência ao perfil do comprador: se ele se mudar para outra casa, as encomendas antigas continuam a dizer para onde foram entregues. Não há nada a juntar na leitura, e o histórico não se reescreve sozinho. |
 | **`orders.comprador` e `orders.produtor` referenciados** | São utilizadores partilhados por muitas encomendas e os seus dados mudam. Lidos com `.populate()` só quando são precisos. |
 | **`products.produtor` referenciado** | O mesmo produtor tem dezenas de produtos; duplicar a sua localidade e descrição em cada um obrigaria a reescrever todos os documentos a cada alteração. |
 | **`auctions.licitacaoAtual` embebido** | É um único valor (valor, comprador, nome), lido sempre com o leilão e escrito em cada licitação. Embebido, a validação e a escrita da licitação fazem-se **numa só operação atómica** — é o que garante a consistência do leilão. |

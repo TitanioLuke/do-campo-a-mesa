@@ -7,10 +7,14 @@ import { useAvisos } from '../contexto/AvisosContext';
 
 export default function Carrinho() {
   const { linhas, alterarQuantidade, remover, limpar, total } = useCarrinho();
-  const { temSessao, papel } = useAuth();
+  const { temSessao, papel, utilizador } = useAuth();
   const navegar = useNavigate();
 
   const [entrega, setEntrega] = useState({ tipo: 'levantamento', morada: '' });
+  // Quem guardou a morada no registo escolhe entre essa e uma morada nova.
+  const [origemMorada, setOrigemMorada] = useState('registo');
+  const moradaDoRegisto = utilizador?.morada?.trim() || '';
+  const moradaEscolhida = origemMorada === 'registo' && moradaDoRegisto ? moradaDoRegisto : entrega.morada;
   const { sucesso, erro } = useAvisos();
   const [aEnviar, setAEnviar] = useState(false);
 
@@ -19,7 +23,12 @@ export default function Carrinho() {
     try {
       const encomendas = await api.post('/orders', {
         linhas: linhas.map((l) => ({ produto: l.produto._id, quantidade: l.quantidade })),
-        entrega,
+        // A encomenda guarda uma CÓPIA da morada, como já faz com o nome e o
+        // preço dos produtos: mudar o perfil mais tarde não reescreve o passado.
+        entrega: {
+          tipo: entrega.tipo,
+          morada: entrega.tipo === 'entrega' ? moradaEscolhida : '',
+        },
       });
       limpar();
       sucesso(
@@ -57,7 +66,12 @@ export default function Carrinho() {
           <div className="painel">
             <table className="tabela-simples">
               <thead>
-                <tr><th>Produto</th><th>Preço</th><th>Qtd.</th><th>Subtotal</th><th /></tr>
+                <tr>
+                  <th>Produto</th>
+                  {/* o preço unitário sai no telemóvel: o subtotal é o que interessa */}
+                  <th className="d-none d-md-table-cell">Preço</th>
+                  <th>Qtd.</th><th>Subtotal</th><th />
+                </tr>
               </thead>
               <tbody>
                 {linhas.map(({ produto, quantidade }) => (
@@ -66,7 +80,7 @@ export default function Carrinho() {
                       <Link to={`/produtos/${produto._id}`} className="text-dark fw-semibold">{produto.nome}</Link>
                       <div className="small text-black-50">{produto.produtor?.nome}</div>
                     </td>
-                    <td>{euros(produto.preco)}</td>
+                    <td className="d-none d-md-table-cell">{euros(produto.preco)}</td>
                     <td>
                       <input
                         type="number"
@@ -119,13 +133,63 @@ export default function Carrinho() {
             </select>
 
             {entrega.tipo === 'entrega' && (
-              <textarea
-                className="form-control mb-2"
-                rows="2"
-                placeholder="Morada de entrega"
-                value={entrega.morada}
-                onChange={(e) => setEntrega({ ...entrega, morada: e.target.value })}
-              />
+              <div className="mb-2">
+                {moradaDoRegisto && (
+                  <>
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name="origem-morada"
+                        id="morada-registo"
+                        checked={origemMorada === 'registo'}
+                        onChange={() => setOrigemMorada('registo')}
+                      />
+                      <label className="form-check-label small" htmlFor="morada-registo">
+                        A morada do meu registo
+                      </label>
+                    </div>
+
+                    {origemMorada === 'registo' && (
+                      <div className="border rounded bg-light p-2 small my-1">
+                        {moradaDoRegisto}
+                        <Link className="d-block" to="/perfil">Alterar no perfil</Link>
+                      </div>
+                    )}
+
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name="origem-morada"
+                        id="morada-nova"
+                        checked={origemMorada === 'nova'}
+                        onChange={() => setOrigemMorada('nova')}
+                      />
+                      <label className="form-check-label small" htmlFor="morada-nova">
+                        Entregar noutra morada
+                      </label>
+                    </div>
+                  </>
+                )}
+
+                {(!moradaDoRegisto || origemMorada === 'nova') && (
+                  <>
+                    <textarea
+                      className="form-control mt-1"
+                      rows="2"
+                      placeholder="Rua, número, código postal e localidade"
+                      value={entrega.morada}
+                      onChange={(e) => setEntrega({ ...entrega, morada: e.target.value })}
+                    />
+                    {!moradaDoRegisto && temSessao && papel === 'comprador' && (
+                      <small className="text-black-50">
+                        Guarde a morada no <Link to="/perfil">seu perfil</Link> para não a escrever de cada vez.
+                      </small>
+                    )}
+                  </>
+                )}
+              </div>
             )}
 
             {!temSessao ? (
@@ -139,7 +203,7 @@ export default function Carrinho() {
             ) : (
               <button
                 className="btn btn-verde w-100"
-                disabled={aEnviar || (entrega.tipo === 'entrega' && !entrega.morada)}
+                disabled={aEnviar || (entrega.tipo === 'entrega' && !moradaEscolhida.trim())}
                 onClick={finalizar}
               >
                 {aEnviar ? 'A enviar…' : 'Finalizar encomenda'}
