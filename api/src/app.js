@@ -39,6 +39,7 @@ app.use('/api/auctions', require('./routes/auctions'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/uploads', require('./routes/uploads'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 // --- Documentação OpenAPI em /api-docs ---
 const openapi = YAML.load(path.join(__dirname, '..', 'openapi.yaml'));

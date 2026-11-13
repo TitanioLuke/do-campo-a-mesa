@@ -2,6 +2,8 @@ const express = require('express');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const autenticar = require('../middleware/auth');
+const notificar = require('../notificar');
+const { euros } = require('../notificar');
 
 const router = express.Router();
 
@@ -104,6 +106,21 @@ router.post('/', autenticar('comprador'), async (req, res) => {
     throw erro;
   }
 
+  // 5. Notificar os produtores, FORA do bloco que desfaz a encomenda: uma
+  //    falha a gravar a notificação não pode cancelar uma venda que já está
+  //    feita. No pior caso perde-se o aviso, não o negócio.
+  for (const encomenda of encomendas) {
+    try {
+      await notificar(io, encomenda.produtor, {
+        texto: `Nova encomenda de ${encomenda.linhas.length} artigo(s), no valor de ${euros(encomenda.total)}.`,
+        para: '/produtor/encomendas',
+        tipo: 'sucesso',
+      });
+    } catch {
+      /* a encomenda está feita; o aviso é o que se perde */
+    }
+  }
+
   res.status(201).location(`/api/orders/${encomendas[0]._id}`).json(encomendas);
 });
 
@@ -153,10 +170,15 @@ router.patch('/:id/estado', autenticar('produtor'), async (req, res) => {
   ).populate('produtor', 'nome');
   if (!encomenda) return res.status(404).json({ erro: 'Encomenda não encontrada' });
 
-  req.app.get('io').to(`user:${encomenda.comprador}`).emit('encomenda-atualizada', {
+  const io = req.app.get('io');
+  io.to(`user:${encomenda.comprador}`).emit('encomenda-atualizada', {
     id: encomenda._id,
     estado: encomenda.estado,
     produtor: encomenda.produtor.nome,
+  });
+  await notificar(io, encomenda.comprador, {
+    texto: `A sua encomenda em ${encomenda.produtor.nome} passou a "${encomenda.estado}".`,
+    para: '/encomendas',
   });
 
   res.json(encomenda);

@@ -27,8 +27,8 @@ function Sino() {
 /**
  * Sininho das notificações, ao lado do nome no cabeçalho.
  *
- * As notificações chegam pelo WebSocket (ver SocketContext) e ficam guardadas
- * entre visitas. Abrir o sininho é dar por lidas; cada linha leva à página que
+ * As notificações são guardadas no servidor e chegam pelo WebSocket a quem
+ * está ligado (ver SocketContext). Quem não estava recebe-as ao entrar. Abrir o sininho é dar por lidas; cada linha leva à página que
  * a resolve — a encomenda, a sala do leilão, as avaliações.
  */
 export default function Sininho() {
@@ -92,10 +92,10 @@ export default function Sininho() {
           ) : (
             <ul>
               {notificacoes.map((n) => (
-                <li key={n.id}>
+                <li key={n._id}>
                   <Link to={n.para} onClick={() => setAberto(false)}>
                     <span>{n.texto}</span>
-                    <small>{dataPt(n.data)}</small>
+                    <small>{dataPt(n.createdAt)}</small>
                   </Link>
                 </li>
               ))}

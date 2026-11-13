@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const Auction = require('../models/Auction');
 const Bid = require('../models/Bid');
+const notificar = require('../notificar');
+const { euros } = require('../notificar');
 
 // De quanto em quanto tempo o servidor verifica se há leilões para abrir ou fechar
 const INTERVALO_RELOGIO = 3000;
@@ -201,12 +203,19 @@ module.exports = function configurarSockets(io) {
 
       io.to(`leilao:${leilao._id}`).emit('leilao-terminado', leilao);
 
-      // Avisa o vencedor e o produtor nas salas pessoais
+      // Avisa o vencedor e o produtor nas salas pessoais. Um leilão fecha à
+      // hora marcada, não quando alguém está a ver: é por isso que estas duas
+      // notificações ficam gravadas.
       if (leilao.licitacaoAtual.comprador) {
         io.to(`user:${leilao.licitacaoAtual.comprador}`).emit('leilao-ganho', {
           id: leilao._id,
           lote: leilao.lote,
           valor: leilao.licitacaoAtual.valor,
+        });
+        await notificar(io, leilao.licitacaoAtual.comprador, {
+          texto: `Ganhou o leilão "${leilao.lote}" por ${euros(leilao.licitacaoAtual.valor)}.`,
+          para: `/leiloes/${leilao._id}`,
+          tipo: 'sucesso',
         });
       }
       io.to(`user:${leilao.produtor}`).emit('leilao-fechado', {
@@ -214,6 +223,12 @@ module.exports = function configurarSockets(io) {
         lote: leilao.lote,
         valor: leilao.licitacaoAtual.valor,
         comprador: leilao.licitacaoAtual.nome,
+      });
+      await notificar(io, leilao.produtor, {
+        texto: leilao.licitacaoAtual.nome
+          ? `O leilão "${leilao.lote}" fechou por ${euros(leilao.licitacaoAtual.valor)}, com ${leilao.licitacaoAtual.nome}.`
+          : `O leilão "${leilao.lote}" terminou sem licitações.`,
+        para: `/leiloes/${leilao._id}`,
       });
     }
 

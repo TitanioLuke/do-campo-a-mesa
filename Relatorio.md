@@ -240,7 +240,7 @@ também "Porto de Mós" e "Porto Santo", e "Braga" apanharia "Bragança".
 # 5. API REST
 
 Recursos identificados por URI, verbo HTTP adequado e código de estado correto em cada resposta.
-São 25 caminhos, documentados em OpenAPI (secção 7); a tabela seguinte mostra uma amostra.
+São 27 caminhos, documentados em OpenAPI (secção 7); a tabela seguinte mostra uma amostra.
 
 | Método | Endpoint | Papel | Estado |
 | --- | --- | --- | --- |
@@ -376,12 +376,12 @@ o índice cobre a consulta.
 
 # 7. Documentação Swagger
 
-A especificação está em `api/openapi.yaml` (OpenAPI 3.0.3) e cobre os **25 caminhos**, com todos
+A especificação está em `api/openapi.yaml` (OpenAPI 3.0.3) e cobre os **27 caminhos**, com todos
 os parâmetros de query, corpos de pedido, códigos de resposta e o cabeçalho `Location` nas
 criações.
 
 - `components.schemas`: `Utilizador`, `RespostaLogin`, `ProdutoInput`, `Produto`,
-  `LinhaEncomenda`, `Encomenda`, `Leilao`, `Licitacao`, `Avaliacao`, `Erro`.
+  `LinhaEncomenda`, `Encomenda`, `Leilao`, `Licitacao`, `Avaliacao`, `Notificacao`, `Erro`.
 - `components.securitySchemes.bearerAuth`: `http` / `bearer` / `JWT`, aplicado com
   `security: [{ bearerAuth: [] }]` em todos os endpoints protegidos.
 
@@ -621,31 +621,72 @@ na data; uma a 5 segundos do fim empurrou-a exatamente 30 segundos e os dois cli
 mesma data nova; uma segunda licitação dentro da janela voltou a empurrar; e, sem mais
 licitações, o leilão fechou 30 segundos depois da última, com o vencedor e o valor certos.
 
-## 9.7. Notificações: o aviso que passa e o sininho que fica
+## 9.7. Notificações: o WebSocket entrega, mas não guarda
 
 O *toast* desaparece ao fim de segundos. Serve para quem está a olhar — e não serve para mais
-nada: quem estava noutro separador perdia a venda, a avaliação e o fim do leilão. Por isso cada
-evento da sala pessoal passou a ter dois destinos: o aviso, que passa, e o **sininho** no
-cabeçalho, que fica.
+nada: quem estava noutro separador perdia a venda, a avaliação e o fim do leilão. A primeira
+resposta a isso foi um **sininho** no cabeçalho, com a lista guardada no `localStorage` do
+browser.
 
-| Papel | Evento | O que aconteceu |
+Essa resposta estava errada, e a razão é instrutiva. Um evento de WebSocket **só existe
+enquanto alguém está ligado para o receber**: o Socket.io entrega-o às salas que existem
+naquele instante e esquece-o. Guardá-lo no cliente só resolve o caso de quem já lá estava.
+Com a lista no browser havia duas falhas:
+
+- um produtor que não tivesse a aplicação aberta — que é o estado normal de um produtor —
+  **nunca sabia da encomenda**;
+- e quem a tivesse aberta ficava com as notificações presas àquele computador; no telemóvel
+  o sininho estava vazio.
+
+A correção foi tratar a notificação como aquilo que ela é: **um recurso, não um evento**. Há
+uma coleção `notifications` e uma função única no servidor que grava primeiro e emite depois:
+
+```js
+async function notificar(io, utilizador, { texto, para, tipo }) {
+  const notificacao = await Notification.create({ utilizador, texto, para, tipo });
+  io.to(`user:${utilizador}`).emit('notificacao', { ...notificacao.toJSON() });
+  return notificacao;
+}
+```
+
+A ordem não é indiferente: gravando primeiro, a notificação existe mesmo que ninguém esteja
+ligado para a receber. O `emit` passa a ser só a entrega imediata a quem por acaso está
+presente. Quem não está encontra-a ao iniciar sessão, em `GET /api/notifications`, em qualquer
+computador.
+
+Os sete sítios que notificam passaram todos por esta função:
+
+| Papel | Quando | Para onde leva |
 | --- | --- | --- |
-| Comprador | `encomenda-atualizada` | a encomenda mudou de estado |
-| Comprador | `leilao-ganho` | ganhou um leilão |
-| Produtor | `nova-encomenda` | alguém comprou |
-| Produtor | `nova-avaliacao` | alguém avaliou um produto seu, ou a si |
-| Produtor | `leilao-fechado` | um leilão seu acabou — com quem ganhou e por quanto |
-| Produtor | `registo-validado` | o administrador aprovou ou rejeitou o registo |
-| Administrador | `avaliacao-denunciada` | há uma avaliação para moderar |
+| Comprador | a encomenda mudou de estado | `/encomendas` |
+| Comprador | ganhou um leilão | a sala do leilão |
+| Produtor | alguém comprou | `/produtor/encomendas` |
+| Produtor | alguém avaliou um produto seu, ou a si | a sua página pública |
+| Produtor | um leilão seu fechou — com quem e por quanto | a sala do leilão |
+| Produtor | o administrador aprovou ou rejeitou o registo | `/produtor` |
+| Administrador | há uma avaliação denunciada para moderar | `/admin` |
 
-As notificações ficam guardadas no browser, por utilizador, e cada uma leva o caminho da página
-que a resolve. Abrir o sininho é dar por lidas. Não é um histórico: guarda as 20 últimas.
+Os textos ficam **no servidor**, que é quem os grava: é a mesma frase que vai para a base de
+dados e para o ecrã, e não há uma versão no cliente a divergir da outra.
 
-Duas consequências que não se veem à primeira. O `registo-validado` não se limita a avisar:
-**corrige o utilizador da sessão**, senão o produtor acabado de aprovar via a mensagem e
-continuava sem os formulários, porque o estado do registo vinha do momento em que iniciou a
-sessão. E a denúncia de uma avaliação é o único evento que não vai para uma sala pessoal: vai
-para a sala `admins`, em que cada administrador entra ao ligar-se.
+Três pormenores que valem a pena:
+
+- Os eventos antigos (`nova-encomenda`, `encomenda-atualizada`, `avaliacao-denunciada`)
+  **continuam a existir**, mas agora com um só papel: manter em dia as páginas que já estão
+  abertas. Ficaram separados do que é notificar — uma coisa é sincronizar um ecrã, outra é
+  deixar um recado.
+- O `registo-validado` não se limita a avisar: **corrige o utilizador da sessão**, senão o
+  produtor acabado de aprovar via a mensagem e continuava sem os formulários, porque o estado
+  do registo vinha do momento em que iniciou a sessão.
+- A lista não é um arquivo. Mostram-se as 30 mais recentes, e um **índice TTL** encarrega o
+  próprio MongoDB de apagar as que passam dos 30 dias:
+
+```js
+notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
+```
+
+Verificado com o produtor **fora da aplicação**: a encomenda foi feita com ele sem sessão
+iniciada, e ao entrar o sininho já tinha a notificação à espera, por ler.
 
 ## 9.8. O que uma licitação compromete
 

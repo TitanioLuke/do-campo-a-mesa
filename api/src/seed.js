@@ -20,6 +20,7 @@ const Order = require('./models/Order');
 const Auction = require('./models/Auction');
 const Bid = require('./models/Bid');
 const Review = require('./models/Review');
+const Notification = require('./models/Notification');
 
 // ---------------------------------------------------------------------------
 // Utilitários
@@ -105,6 +106,9 @@ async function seed() {
   await Promise.all([
     User.deleteMany({}), Product.deleteMany({}), Order.deleteMany({}),
     Auction.deleteMany({}), Bid.deleteMany({}), Review.deleteMany({}),
+    // As notificações apontam para utilizadores; recriados estes, aquelas
+    // ficariam órfãs.
+    Notification.deleteMany({}),
   ]);
   const hash = await bcrypt.hash('123456', 12);
   const conta = (extra) => ({ passwordHash: hash, ...extra });

@@ -5,6 +5,7 @@ const Order = require('../models/Order');
 const Auction = require('../models/Auction');
 const Review = require('../models/Review');
 const autenticar = require('../middleware/auth');
+const notificar = require('../notificar');
 
 const router = express.Router();
 
@@ -60,8 +61,18 @@ router.patch('/produtores/:id', async (req, res) => {
   );
   if (!produtor) return res.status(404).json({ erro: 'Produtor não encontrado' });
 
-  // Avisa o produtor em tempo real na sua sala pessoal
-  req.app.get('io').to(`user:${produtor._id}`).emit('registo-validado', { aprovado });
+  // Avisa o produtor em tempo real na sua sala pessoal, e deixa-lhe a
+  // notificação gravada — esta é a que ele mais provavelmente perderia, porque
+  // ninguém fica à espera da decisão com a aplicação aberta.
+  const io = req.app.get('io');
+  io.to(`user:${produtor._id}`).emit('registo-validado', { aprovado });
+  await notificar(io, produtor._id, {
+    texto: aprovado === 'aprovado'
+      ? 'O seu registo foi aprovado. Já pode publicar produtos e agendar leilões.'
+      : `O administrador marcou o seu registo como "${aprovado}".`,
+    para: '/produtor',
+    tipo: aprovado === 'aprovado' ? 'sucesso' : 'erro',
+  });
   res.json(produtor);
 });
 

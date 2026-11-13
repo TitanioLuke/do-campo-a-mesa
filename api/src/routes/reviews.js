@@ -3,7 +3,9 @@ const mongoose = require('mongoose');
 const Review = require('../models/Review');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const User = require('../models/User');
 const autenticar = require('../middleware/auth');
+const notificar = require('../notificar');
 
 const router = express.Router();
 
@@ -93,11 +95,18 @@ router.post('/', autenticar('comprador'), async (req, res) => {
   await atualizarMedia(produto);
 
   // O produtor vê a avaliação chegar no sininho, sem recarregar a página
-  req.app.get('io').to(`user:${idProdutor}`).emit('nova-avaliacao', {
+  const io = req.app.get('io');
+  io.to(`user:${idProdutor}`).emit('nova-avaliacao', {
     id: avaliacao._id,
     nota: avaliacao.nota,
     nome: avaliacao.nome,
     alvo: produtoAvaliado ? produtoAvaliado.nome : null, // null = avaliação ao produtor
+  });
+  await notificar(io, idProdutor, {
+    texto: produtoAvaliado
+      ? `${avaliacao.nome} avaliou "${produtoAvaliado.nome}" com ${avaliacao.nota} estrelas.`
+      : `${avaliacao.nome} avaliou-o com ${avaliacao.nota} estrelas.`,
+    para: `/produtores/${idProdutor}`,
   });
 
   res.status(201).location(`/api/reviews/${avaliacao._id}`).json(avaliacao);
@@ -108,11 +117,23 @@ router.post('/:id/denunciar', autenticar(), async (req, res) => {
   const avaliacao = await Review.findByIdAndUpdate(req.params.id, { denunciada: true }, { new: true });
   if (!avaliacao) return res.status(404).json({ erro: 'Avaliação não encontrada' });
 
-  // A denúncia aparece no painel do administrador sem ele recarregar nada
-  req.app.get('io').to('admins').emit('avaliacao-denunciada', {
+  // A denúncia aparece no painel do administrador sem ele recarregar nada.
+  // Como pode haver mais do que um administrador, a notificação é gravada
+  // para cada um — e assim também lá está para quem não estava a ver.
+  const io = req.app.get('io');
+  io.to('admins').emit('avaliacao-denunciada', {
     id: avaliacao._id,
     nome: avaliacao.nome,
   });
+
+  const administradores = await User.find({ papel: 'admin' }).select('_id');
+  for (const admin of administradores) {
+    await notificar(io, admin._id, {
+      texto: `A avaliação de ${avaliacao.nome} foi denunciada e espera moderação.`,
+      para: '/admin',
+      tipo: 'erro',
+    });
+  }
 
   res.json(avaliacao);
 });

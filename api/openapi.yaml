@@ -584,6 +584,40 @@ paths:
         '403': { description: Sem permissão }
         '404': { description: Avaliação não encontrada }
 
+  /notifications:
+    get:
+      tags: [Notificações]
+      summary: As notificações do utilizador autenticado, da mais recente para a mais antiga
+      description: >
+        As notificações são gravadas no servidor antes de serem emitidas pelo WebSocket.
+        É isto que permite a quem não tinha a aplicação aberta encontrá-las ao iniciar sessão.
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Lista de notificações (no máximo 30)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Notificacao' }
+        '401': { description: Token em falta ou inválido }
+    delete:
+      tags: [Notificações]
+      summary: Limpar a lista
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Notificações apagadas }
+        '401': { description: Token em falta ou inválido }
+
+  /notifications/lidas:
+    patch:
+      tags: [Notificações]
+      summary: Marcar todas como lidas (abrir o sininho)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Marcadas como lidas }
+        '401': { description: Token em falta ou inválido }
+
   /uploads:
     post:
       tags: [Imagens]
@@ -720,6 +754,17 @@ components:
         comprador: { type: string }
         nome: { type: string }
         valor: { type: number }
+        createdAt: { type: string, format: date-time }
+
+    Notificacao:
+      type: object
+      properties:
+        _id: { type: string }
+        utilizador: { type: string }
+        texto: { type: string, example: 'Nova encomenda de 2 artigo(s), no valor de 12,40 €.' }
+        para: { type: string, description: Caminho da página que resolve a notificação, example: /produtor/encomendas }
+        tipo: { type: string, enum: [sucesso, info, erro] }
+        lida: { type: boolean }
         createdAt: { type: string, format: date-time }
 
     Avaliacao:

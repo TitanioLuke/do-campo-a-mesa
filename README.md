@@ -192,7 +192,9 @@ não foi validado: é o que permite demonstrar a aprovação no painel do admini
 - Avaliar **produtos** e **produtores** (1–5 estrelas + comentário), só depois de ter uma
   encomenda entregue e só uma vez por produto / por produtor.
 - **Denunciar avaliações** para moderação, na página do produto ou na do produtor.
-- **Sininho de notificações** no cabeçalho, que guarda o que os avisos temporários deixam passar.
+- **Sininho de notificações** no cabeçalho. As notificações são guardadas no servidor, por
+  isso aparecem mesmo que a aplicação não estivesse aberta quando aconteceram, e seguem a
+  conta em qualquer computador.
 - Entrar na sala de um leilão e licitar: contagem decrescente, número de participantes, histórico
   e atalhos que licitam logo o valor seguinte. Licitar nos últimos 30 segundos **prolonga** o
   leilão.
@@ -210,7 +212,8 @@ não foi validado: é o que permite demonstrar a aprovação no painel do admini
 - Editar a **página pública**, incluindo o ponto no mapa — escrevendo a morada ou arrastando o
   pin.
 - **Sininho de notificações**: alguém comprou, alguém avaliou, um leilão acabou, o administrador
-  validou o registo.
+  validou o registo. Ficam guardadas no servidor — o produtor não precisa de estar com a
+  aplicação aberta para as receber.
 
 ### Administrador
 
@@ -232,7 +235,7 @@ TrabalhoPratico/
 ├── render.yaml                   # Configuração do serviço no Render
 │
 ├── api/                          # API REST + servidor de WebSockets
-│   ├── openapi.yaml              # Especificação OpenAPI 3 (25 caminhos, 10 schemas)
+│   ├── openapi.yaml              # Especificação OpenAPI 3 (27 caminhos, 11 schemas)
 │   ├── uploads/                  # Imagens carregadas pelos produtores
 │   └── src/
 │       ├── models/               # User, Product, Order, Auction, Bid, Review
