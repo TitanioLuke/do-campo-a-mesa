@@ -5,42 +5,34 @@ Mercado digital de produtores locais com leilões em tempo real.
 Trabalho prático individual de **Desenvolvimento Web e para a Cloud** — Mestrado em Engenharia
 Informática, IPVC–ESTG.
 
-**Aplicação publicada:** https://do-campo-a-mesa-six.vercel.app
-**API:** https://do-campo-a-mesa-api-1rju.onrender.com · **Documentação:** [/api-docs](https://do-campo-a-mesa-api-1rju.onrender.com/api-docs)
-
-> O alojamento da API é gratuito e adormece ao fim de 15 minutos sem pedidos. O primeiro
-> acesso depois disso demora perto de um minuto a responder; os seguintes são imediatos.
-
 A plataforma liga pequenos produtores agrícolas da região (hortícolas, fruta, mel, vinho, queijo)
 a consumidores e à restauração local. Os produtores publicam produtos, os compradores fazem
 encomendas e, para lotes sazonais ou excedentes, a plataforma organiza **leilões em direto** com
 vários compradores a licitar em simultâneo.
 
----
+| | |
+| --- | --- |
+| **Aplicação** | https://do-campo-a-mesa-six.vercel.app |
+| **API** | https://do-campo-a-mesa-api-1rju.onrender.com |
+| **Documentação OpenAPI** | https://do-campo-a-mesa-api-1rju.onrender.com/api-docs |
+| **Relatório** | [`Relatorio.md`](Relatorio.md) — arquitetura e decisões técnicas |
 
-## 1. Índice
-
-1. [Índice](#1-índice)
-2. [Tecnologias](#2-tecnologias)
-3. [Como instalar e executar](#3-como-instalar-e-executar)
-4. [Contas de demonstração](#4-contas-de-demonstração)
-5. [Funcionalidades por perfil](#5-funcionalidades-por-perfil)
-6. [Arquitetura](#6-arquitetura)
-7. [Estrutura do projeto](#7-estrutura-do-projeto)
-8. [Frontend: Mobile First, SASS e Bootstrap](#8-frontend-mobile-first-sass-e-bootstrap)
-9. [SPA: componentes, estado e routing](#9-spa-componentes-estado-e-routing)
-10. [API REST](#10-api-rest)
-11. [Modelo de dados MongoDB: embedding vs linking](#11-modelo-de-dados-mongodb-embedding-vs-linking)
-12. [Documentação Swagger](#12-documentação-swagger)
-13. [Autenticação e segurança](#13-autenticação-e-segurança)
-14. [Tempo real e consistência dos leilões](#14-tempo-real-e-consistência-dos-leilões)
-15. [Deployment na Cloud](#15-deployment-na-cloud)
-16. [Dificuldades encontradas](#16-dificuldades-encontradas)
-17. [Utilização de ferramentas de IA](#17-utilização-de-ferramentas-de-ia)
+> O alojamento da API é gratuito e adormece ao fim de 15 minutos sem pedidos. O primeiro acesso
+> depois disso demora perto de um minuto a responder; os seguintes são imediatos.
 
 ---
 
-## 2. Tecnologias
+## Índice
+
+1. [Tecnologias](#tecnologias)
+2. [Como instalar e executar](#como-instalar-e-executar)
+3. [Contas de demonstração](#contas-de-demonstração)
+4. [Funcionalidades por perfil](#funcionalidades-por-perfil)
+5. [Estrutura do projeto](#estrutura-do-projeto)
+
+---
+
+## Tecnologias
 
 | Camada | Tecnologia |
 | --- | --- |
@@ -54,16 +46,17 @@ vários compradores a licitar em simultâneo.
 | Upload de imagens | Multer (pasta local `uploads/`) |
 | Mapas | Leaflet + mosaicos do OpenStreetMap |
 
+As decisões por trás destas escolhas estão no [relatório](Relatorio.md).
+
 ---
 
-## 3. Como instalar e executar
+## Como instalar e executar
 
 ### Pré-requisitos
 
-- Node.js 22 ou superior (fixado em `engines` nos dois `package.json`, para o Render e a
+- **Node.js 22 ou superior** (fixado em `engines` nos dois `package.json`, para o Render e a
   Vercel escolherem a mesma versão que a máquina de desenvolvimento)
-- MongoDB a correr localmente em `mongodb://127.0.0.1:27017`
-  (ou um URI do MongoDB Atlas)
+- **MongoDB** a correr localmente em `mongodb://127.0.0.1:27017`, ou um URI do MongoDB Atlas
 
 No macOS, com Homebrew:
 
@@ -71,7 +64,7 @@ No macOS, com Homebrew:
 brew services start mongodb-community
 ```
 
-### 3.1. API
+### 1. API
 
 ```bash
 cd api && npm install && cp .env.example .env
@@ -86,1176 +79,183 @@ JWT_SECRET=um-segredo-aleatorio
 JWT_EXPIRA=8h
 ```
 
-Preencher a base de dados com dados de demonstração:
+Para gerar um segredo:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+```
+
+### 2. Preencher a base de dados
 
 ```bash
 cd api && npm run seed
 ```
 
-**Só é preciso correr uma vez.** O comando apaga tudo o que estiver na base de dados e
-volta a criá-la de raiz, com 13 utilizadores, 29 produtos, 16 encomendas espalhadas pelas
-últimas seis semanas, 19 avaliações e 7 leilões: 3 a decorrer que duram vários dias, 2 já
-terminados com histórico de licitações, 1 agendado que abre sozinho daqui a poucos minutos
-e 1 relâmpago que termina daqui a 3 minutos, para se ver o prolongamento automático
-(secção 14.8) sem ter de esperar. A partir daí os dados ficam guardados no
-MongoDB e persistem entre arranques — só voltar a correr este comando é que os apaga.
+O comando **apaga tudo o que estiver na base de dados** e volta a criá-la de raiz, com 13
+utilizadores, 29 produtos, 16 encomendas espalhadas pelas últimas seis semanas, 19 avaliações e
+7 leilões. Os dados ficam preparados para mostrar uma situação de cada funcionalidade:
 
-Arrancar a API:
+- **3 leilões a decorrer** que duram vários dias, **2 terminados** com histórico de licitações
+- **1 leilão agendado**, que abre sozinho poucos minutos depois de semear
+- **1 leilão relâmpago**, que termina 5 minutos depois de semear — é com ele que se vê o
+  prolongamento automático sem ter de esperar
+- **2 registos de produtor por validar**, para mostrar os dois caminhos do administrador
+- **1 produto esgotado** e **1 avaliação denunciada** à espera de moderação
+
+Os leilões agendado e relâmpago contam a partir do momento em que o comando corre. Se forem
+precisos para uma demonstração, convém semear imediatamente antes.
+
+### 3. Arrancar
+
+Em dois terminais:
 
 ```bash
 cd api && npm run dev
 ```
 
-- API: <http://localhost:3000/api>
-- Swagger UI: <http://localhost:3000/api-docs>
-
-### 3.2. Frontend
-
 ```bash
-cd web && npm install && cp .env.example .env
+cd web && npm install && npm run dev
 ```
 
-```bash
-cd web && npm run dev
-```
+| | |
+| --- | --- |
+| Aplicação | <http://localhost:5173> |
+| API | <http://localhost:3000/api> |
+| Swagger UI | <http://localhost:3000/api-docs> |
 
-- Aplicação: <http://localhost:5173>
+### Ver no telemóvel
 
-**Ver no telemóvel.** O `vite.config.js` manda o servidor atender também no IP da máquina,
-por isso o terminal mostra duas moradas:
+O `vite.config.js` manda o servidor atender também no IP da máquina, por isso o terminal mostra
+duas moradas:
 
 ```
 ➜  Local:   http://localhost:5173/
 ➜  Network: http://192.168.1.74:5173/      ← esta, no telemóvel
 ```
 
-Basta o telemóvel estar na mesma rede Wi-Fi. Não é preciso configurar o endereço da API:
-a aplicação procura-a na mesma máquina que serviu a página (ver `web/src/servicos/api.js`),
-e por isso funciona tanto em `localhost` como pelo IP — no telemóvel, `localhost` seria o
-próprio telemóvel.
+Basta o telemóvel estar na mesma rede Wi-Fi. Não é preciso configurar o endereço da API: a
+aplicação procura-a na mesma máquina que serviu a página, e por isso funciona tanto em
+`localhost` como pelo IP — no telemóvel, `localhost` seria o próprio telemóvel.
 
-> `VITE_API_URL` só é preciso para apontar para **outra** API, como a versão publicada na
-> Cloud. É o que a Vercel define na publicação.
+> `VITE_API_URL` só é preciso para apontar para **outra** API, como a versão publicada na Cloud.
+> É o que a Vercel define na publicação.
 
 ---
 
-## 4. Contas de demonstração
+## Contas de demonstração
 
-A password de todas é `123456`. O ecrã de login tem botões que preenchem
-automaticamente uma conta de cada papel.
+A password de todas é `123456`. O ecrã de login tem botões que preenchem automaticamente uma
+conta de cada papel.
 
 | Papel | Email | Notas |
 | --- | --- | --- |
 | Administrador | `admin@dcm.pt` | Painel global, validação de produtores e moderação |
-| Produtor | `quinta@dcm.pt` | Quinta do Vale, Ponte de Lima — 6 produtos, leilão a decorrer |
+| Produtor | `quinta@dcm.pt` | Quinta do Vale, Ponte de Lima — 7 produtos, leilão a decorrer |
 | Produtor | `horta@dcm.pt` | Horta da Serra, Viana do Castelo — 7 produtos, leilão terminado |
 | Produtor | `apiario@dcm.pt` | Apiário do Minho, Arcos de Valdevez — 5 produtos, leilão a decorrer |
 | Produtor | `queijaria@dcm.pt` | Queijaria do Lima, Ponte da Barca — 4 produtos |
 | Produtor | `adega@dcm.pt` | Adega do Alvarinho, Monção — 4 produtos, leilão a decorrer |
-| Produtor | `pomar@dcm.pt` | Pomar das Caldas, Caldas de Vizela — **por validar**, já com 2 produtos à espera |
+| Produtor | `pomar@dcm.pt` | Pomar das Caldas, Vizela — **por validar**, já com 2 produtos à espera |
 | Produtor | `vinha@dcm.pt` | Vinha do Lima, Ponte de Lima — **por validar**, registo acabado de criar |
-| Comprador | `ana@dcm.pt` | 4 encomendas, 4 avaliações feitas |
-| Comprador | `bruno@dcm.pt` | 3 encomendas, uma ainda pendente |
+| Comprador | `ana@dcm.pt` | 4 encomendas, 4 avaliações feitas, morada guardada no perfil |
+| Comprador | `bruno@dcm.pt` | 3 encomendas, uma pendente, **sem** morada no perfil |
 | Comprador | `carla@dcm.pt` | Ganhou um leilão, tem licitações a decorrer |
 | Comprador | `diogo@dcm.pt` | 3 encomendas, uma pronta para levantamento |
-| Comprador | `lagar@dcm.pt` | Restaurante O Lagar — cliente de restauração, compras em quantidade |
+| Comprador | `lagar@dcm.pt` | Restaurante O Lagar — compras em quantidade |
 
-Os produtos do **Pomar das Caldas** não aparecem no catálogo porque o registo do produtor
-ainda não foi validado: é o que permite demonstrar a aprovação no painel do administrador.
+Os produtos do **Pomar das Caldas** não aparecem no catálogo porque o registo do produtor ainda
+não foi validado: é o que permite demonstrar a aprovação no painel do administrador.
 
 ---
 
-## 5. Funcionalidades por perfil
+## Funcionalidades por perfil
 
 ### Visitante (sem sessão)
 
-- Explorar o catálogo com pesquisa por nome/descrição e filtros por categoria, época,
-  **produtor**, **localidade**, preço máximo e modo biológico; ordenação por preço ou data.
-  A localidade é escolhida numa lista dos **308 concelhos de Portugal**, e quando não há
-  ninguém a vender nesse concelho a página diz-o e oferece voltar ao catálogo completo.
+- Explorar o catálogo com pesquisa por nome/descrição e filtros por categoria, época, produtor,
+  localidade, preço e modo biológico; ordenação por preço ou data. A localidade é escolhida numa
+  lista dos **308 concelhos de Portugal**.
 - Ver a página pública de cada produtor, com apresentação, mapa e avaliações recebidas.
-- Ver a lista de leilões (ativos e terminados) e o destaque dos leilões em direto na página inicial.
-- Juntar produtos ao carrinho (fica guardado no `localStorage`) e registar-se como comprador
-  ou produtor para finalizar.
+- Ver a lista de leilões e acompanhar uma sala em direto, sem poder licitar.
+- Juntar produtos ao carrinho (guardado no `localStorage`) e registar-se para finalizar.
 
 ### Comprador
 
-- **Registo com telefone e morada** (ambos opcionais). A morada fica no perfil e evita
-  escrevê-la em cada compra.
-- Carrinho com alteração de quantidades e escolha entre levantamento no produtor ou entrega
-  ao domicílio. Na entrega, quem tem morada no perfil escolhe entre **essa morada** e
-  **outra morada** (uma prenda para alguém, o restaurante em vez de casa); quem ainda não
-  guardou nenhuma escreve-a ali e é convidado a guardá-la no perfil.
-- Finalizar a encomenda: o carrinho pode ter produtos de vários produtores e é criada
-  **uma encomenda por produtor**.
-- Acompanhar os estados (`pendente → confirmada → pronta → entregue`) com barra de progresso
-  e **notificação em tempo real** sempre que o produtor muda o estado.
-- Avaliar **produtos** e **produtores** (1–5 estrelas + comentário), em qualquer dos casos
-  só depois de ter uma encomenda entregue, e só uma vez por produto / por produtor.
-- **Denunciar avaliações** para moderação, tanto na página do produto como na do produtor.
-  A denúncia chega ao painel do administrador na hora, sem ele recarregar nada.
-- **Sininho de notificações** no cabeçalho: cada mudança de estado de uma encomenda fica lá
-  guardada, não só no aviso que passa (secção 14.9).
-- Entrar na sala de um leilão e licitar: contagem decrescente, número de participantes,
-  histórico de licitações, atalhos que licitam logo o valor seguinte e validação do
-  mínimo no servidor. Licitar nos últimos 30 segundos **prolonga** o leilão, para
-  ninguém ganhar à última sem dar aos outros tempo de resposta (secção 14.8).
-- **Perfil próprio** onde altera nome, telefone e morada, com um resumo das compras
-  (encomendas, produtores a quem comprou, artigos de cada uma e total gasto).
+- Registo com telefone e morada, ambos opcionais. A morada fica no perfil e evita escrevê-la em
+  cada compra.
+- Carrinho com escolha entre levantamento no produtor ou entrega ao domicílio. Na entrega, quem
+  tem morada no perfil escolhe entre **essa morada** e **outra morada**.
+- Finalizar a encomenda: o carrinho pode ter produtos de vários produtores e é criada **uma
+  encomenda por produtor**.
+- Acompanhar os estados (`pendente → confirmada → pronta → entregue`) com **notificação em tempo
+  real** sempre que o produtor muda o estado.
+- Avaliar **produtos** e **produtores** (1–5 estrelas + comentário), só depois de ter uma
+  encomenda entregue e só uma vez por produto / por produtor.
+- **Denunciar avaliações** para moderação, na página do produto ou na do produtor.
+- **Sininho de notificações** no cabeçalho, que guarda o que os avisos temporários deixam passar.
+- Entrar na sala de um leilão e licitar: contagem decrescente, número de participantes, histórico
+  e atalhos que licitam logo o valor seguinte. Licitar nos últimos 30 segundos **prolonga** o
+  leilão.
+- Perfil próprio com um resumo das compras.
 
 ### Produtor
 
-- Painel com indicadores: vendas entregues, total de encomendas, encomendas por confirmar
-  e avaliação média.
-- **Alertas de stock baixo** (produtos com menos de 5 unidades).
-- Gestão do catálogo: criar, editar e apagar produtos, com upload de fotografia.
-  **Só depois de o administrador aprovar o registo**: até lá o produtor entra e vê o painel,
-  mas não cria nem altera produtos, leilões ou fotografias (secção 13).
-- Encomendas recebidas, com filtro por estado e botão para avançar o estado
-  (o comprador é notificado na hora).
-- **Agendar leilões** (lote, preço base, incremento, hora de abertura e duração).
-  A abertura escolhe-se **à hora e ao minuto**, em duas listas, entre as 08:00 e as 18:00
-  do próprio dia — num telemóvel são as rodas de escolha do sistema. O formulário diz
-  quanto falta ("Abre daqui a 1h 29min.") e não deixa escolher uma hora que já passou.
-  A duração escreve-se em três campos — **dias, horas e minutos** —, até ao máximo de uma
-  semana. Assim tanto se agenda um leilão de 30 minutos como um de 2h30 ou de 4 dias, sem
-  ninguém ter de converter nada de cabeça. O formulário diz por baixo quanto vai durar
-  ("O leilão dura 2h 30min.") e não deixa agendar se a soma for zero ou passar a semana.
-  O leilão abre e fecha sozinho à hora marcada.
-- Editar a sua **página pública** (nome, concelho, telefone, morada e apresentação), com
-  pré-visualização ao lado do formulário. O ponto no mapa escolhe-se de duas maneiras:
-  escrevendo a morada e carregando em **"Procurar no mapa"**, ou **arrastando o pin** para o
-  sítio exato — ninguém tem de copiar latitudes e longitudes à mão.
-- **Sininho de notificações** no cabeçalho, em tempo real: alguém comprou, alguém avaliou, um
-  leilão acabou (e com quem ficou), o administrador validou o registo. Cada linha leva à
-  página que a resolve (secção 14.9).
+- Painel com indicadores de vendas e **alertas de stock baixo**.
+- Gestão do catálogo: criar, editar e apagar produtos, com upload de fotografia. **Só depois de o
+  administrador aprovar o registo.**
+- Encomendas recebidas, com filtro por estado e botão para avançar o estado.
+- **Agendar leilões**: a abertura escolhe-se à hora e ao minuto, entre as 08:00 e as 18:00 do
+  próprio dia; a duração escreve-se em dias, horas e minutos, até ao máximo de uma semana. O
+  leilão abre e fecha sozinho.
+- Editar a **página pública**, incluindo o ponto no mapa — escrevendo a morada ou arrastando o
+  pin.
+- **Sininho de notificações**: alguém comprou, alguém avaliou, um leilão acabou, o administrador
+  validou o registo.
 
 ### Administrador
 
-- Painel global: compradores, produtores, produtos, encomendas, volume de negócios,
-  leilões ativos, registos por validar e avaliações denunciadas.
+- Painel global: compradores, produtores, produtos, encomendas, volume de negócios, leilões
+  ativos, registos por validar e avaliações denunciadas.
 - **Validar registos de produtores** (aprovar / rejeitar) — o produtor é notificado em tempo real.
-- **Moderar avaliações denunciadas**: manter, esconder ou apagar
-  (a média do produto é recalculada).
-- Lista de leilões ativos em tempo real, utilizadores e últimas encomendas da plataforma.
+- **Moderar avaliações denunciadas**: manter, esconder ou apagar.
+- Lista de leilões ativos em tempo real, utilizadores e últimas encomendas.
 - Estado dos serviços (API, WebSockets, Swagger UI).
 
 ---
 
-## 6. Arquitetura
-
-```
-┌─────────────────────────┐   HTTPS / JSON    ┌────────────────────────────┐
-│  SPA  (React + Vite)    │ ────────────────► │  API REST (Node + Express)  │
-│  Bootstrap 5 · SASS     │ ◄──────────────── │  JWT · Swagger UI           │
-│  Mobile First           │                   └────────────┬───────────────┘
-│                         │                                │ Mongoose
-│                         │     WebSocket                  ▼
-│                         │ ◄───────────────► ┌────────────────────────────┐
-└─────────────────────────┘   Socket.io       │        MongoDB             │
-                                              │ users · products · orders  │
-                                              │ auctions · bids · reviews  │
-                                              └────────────────────────────┘
-```
-
-A API REST e o servidor de Socket.io correm no **mesmo processo e no mesmo servidor HTTP**
-(`src/server.js`). Isto permite que uma rota REST envie eventos pelo WebSocket: a instância `io`
-fica disponível em `app.set('io', io)` e as rotas acedem-lhe com `req.app.get('io')`.
-É assim que `PATCH /api/orders/:id/estado` notifica o comprador.
-
----
-
-## 7. Estrutura do projeto
+## Estrutura do projeto
 
 ```
 TrabalhoPratico/
+├── Relatorio.md                  # Arquitetura e decisões técnicas
+├── Guiao_Video.md                # Guião da demonstração
+├── render.yaml                   # Configuração do serviço no Render
+│
 ├── api/                          # API REST + servidor de WebSockets
-│   ├── openapi.yaml              # Especificação OpenAPI 3 (25 endpoints, 10 schemas)
+│   ├── openapi.yaml              # Especificação OpenAPI 3 (25 caminhos, 10 schemas)
 │   ├── uploads/                  # Imagens carregadas pelos produtores
 │   └── src/
-│       ├── models/               # Schemas Mongoose
-│       │   ├── User.js  Product.js  Order.js
-│       │   └── Auction.js  Bid.js  Review.js
-│       ├── routes/               # Um ficheiro por recurso
-│       │   ├── auth.js  products.js  producers.js  orders.js
-│       │   └── auctions.js  reviews.js  admin.js  uploads.js
-│       ├── middleware/
-│       │   ├── auth.js           # Verificação do JWT + controlo por papel
-│       │   └── upload.js         # Multer
+│       ├── models/               # User, Product, Order, Auction, Bid, Review
+│       ├── routes/               # auth, products, producers, orders,
+│       │                         #   auctions, reviews, admin, uploads
+│       ├── middleware/           # auth.js, produtorAprovado.js, upload.js
 │       ├── sockets/leiloes.js    # Salas, licitação atómica, fecho automático
 │       ├── app.js                # Express: rotas, Swagger, erros
 │       ├── server.js             # Liga ao MongoDB e arranca HTTP + Socket.io
 │       └── seed.js               # Dados de demonstração
 │
 └── web/                          # SPA
+    ├── vercel.json               # Rewrites para o routing do React Router
     └── src/
-        ├── componentes/          # Reutilizáveis
-        │   ├── Cabecalho.jsx  Rodape.jsx  Notificacoes.jsx
-        │   ├── CartaoProduto.jsx  CartaoLeilao.jsx  FiltrosCatalogo.jsx
-        │   ├── SelectLocalidade.jsx  # lista de concelhos, partilhada por 3 ecrãs
-        │   └── Contador.jsx  Estrelas.jsx  EtiquetaEstado.jsx  RotaProtegida.jsx
-        ├── contexto/             # Estado global
-        │   ├── AuthContext.jsx   # Sessão e papel
-        │   ├── CarrinhoContext.jsx
-        │   └── SocketContext.jsx # Ligação WebSocket + notificações
-        ├── hooks/useLeilao.js    # Hook da sala de leilão
-        ├── paginas/
-        │   ├── Catalogo.jsx  Produto.jsx  Produtores.jsx  PaginaProdutor.jsx
-        │   ├── Leiloes.jsx  SalaLeilao.jsx  Carrinho.jsx  MinhasEncomendas.jsx
-        │   ├── Login.jsx  Registo.jsx  NaoEncontrado.jsx
-        │   ├── produtor/         # Painel, produtos, encomendas, leilões, página pública
-        │   └── admin/PainelAdmin.jsx
+        ├── componentes/          # CartaoProduto, CartaoLeilao, Contador,
+        │                         #   Estrelas, Mapa, Modal, Sininho…
+        ├── contexto/             # AuthContext, CarrinhoContext,
+        │                         #   SocketContext, AvisosContext
+        ├── hooks/                # useLeilao, useListaLeiloes
+        ├── paginas/              # Uma por rota, com produtor/ e admin/ à parte
         ├── dados/concelhos.js    # Os 308 concelhos, com distrito e coordenadas
-        ├── servicos/
-        │   ├── api.js           # Camada única de acesso à API
-        │   ├── validacao.js     # Regras repetidas dos formulários
-        │   └── geocodificar.js  # Morada escrita -> coordenadas
-        ├── estilos/              # SASS
-        │   ├── _variaveis.scss  _mixins.scss
-        │   ├── _layout.scss  _componentes.scss  main.scss
+        ├── servicos/             # api.js, validacao.js, geocodificar.js
+        ├── estilos/              # SASS: _variaveis, _mixins, _layout, _componentes
         ├── App.jsx               # Providers + routing
         └── main.jsx
 ```
-
----
-
-## 8. Frontend: Mobile First, SASS e Bootstrap
-
-**Mobile First.** Os estilos base são os do telemóvel (uma coluna) e os ecrãs maiores são
-acrescentados com media queries `min-width`. Estão definidos **3 breakpoints**, em
-`web/src/estilos/_variaveis.scss`:
-
-```scss
-$breakpoints: (md: 768px, lg: 1024px, xl: 1280px);
-```
-
-**Mixins** (`_mixins.scss`) — toda a aplicação usa estes três:
-
-```scss
-@mixin a-partir-de($bp) {                      // Mobile First
-  @media (min-width: map.get(v.$breakpoints, $bp)) { @content; }
-}
-
-@mixin grelha($md: 2, $lg: 3, $xl: 4) {        // grelha responsiva
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: 1fr;                  // telemóvel
-  @include a-partir-de(md) { grid-template-columns: repeat($md, 1fr); }
-  @include a-partir-de(lg) { grid-template-columns: repeat($lg, 1fr); }
-  @include a-partir-de(xl) { grid-template-columns: repeat($xl, 1fr); }
-}
-
-@mixin cartao($padding: 1rem) { /* ... */ }    // cartão branco reutilizável
-```
-
-Resultado no catálogo: 1 coluna no telemóvel → 2 a partir de 768 px → 3 a partir de 1024 px
-→ 4 a partir de 1280 px.
-
-**Parciais SASS** importados em `main.scss` com `@use`:
-`_variaveis` (paleta, tipografia, breakpoints), `_mixins`, `_layout` (cabeçalho, rodapé,
-destaque), `_componentes` (cartões, etiquetas, painéis, sala de leilão, notificações).
-
-Um exemplo de código SASS que gera CSS a partir de um mapa — uma classe por estado de encomenda:
-
-```scss
-@each $nome, $cor in v.$estados {
-  .estado-#{$nome} {
-    color: $cor;
-    background: rgba($cor, 0.1);
-    border-color: rgba($cor, 0.35);
-  }
-}
-```
-
-**Bootstrap 5** fornece a grelha (`row`/`col-*`), formulários (`form-control`, `form-select`,
-`form-check`), navegação (`navbar`, `nav-pills`), botões, alertas e tabelas. O CSS do Bootstrap
-é importado em `main.jsx` **antes** do SASS próprio, para que os nossos estilos tenham a última
-palavra.
-
-**HTML semântico**: `<header>`, `<nav>`, `<main>`, `<article>`, `<section>`, `<footer>`,
-hierarquia correta de `<h1>`–`<h3>`, `<label>` ligado a cada campo e `alt` em todas as imagens.
-
----
-
-## 9. SPA: componentes, estado e routing
-
-**Routing no cliente** com `react-router-dom` (`web/src/App.jsx`). As rotas de cada perfil são
-embrulhadas no componente `RotaProtegida`, que redireciona para `/login` quem não tem sessão e
-mostra um aviso a quem tem o papel errado:
-
-```jsx
-<Route path="/produtor/produtos"
-       element={<RotaProtegida papeis={['produtor']}><MeusProdutos /></RotaProtegida>} />
-```
-
-> A proteção no cliente é só conveniência: a segurança real está na API, que valida o JWT e o
-> papel em cada pedido.
-
-**Estado global** com a Context API — três providers em `App.jsx`:
-
-- `AuthContext` — utilizador autenticado, papel, `entrar()`, `registar()`, `sair()`.
-  Ao abrir a aplicação, se existir token no `localStorage`, confirma-o em `GET /api/auth/me`.
-- `CarrinhoContext` — linhas do carrinho, total e número de artigos, guardado no `localStorage`
-  para sobreviver a um recarregamento.
-- `SocketContext` — **uma única ligação WebSocket por utilizador**, partilhada por toda a
-  aplicação, e a lista de notificações que aparecem como *toasts*.
-
-**Componentes reutilizáveis**: `CartaoProduto` (usado no catálogo e na página do produtor),
-`CartaoLeilao`, `Contador` (contagem decrescente), `Estrelas`, `EtiquetaEstado`,
-`FiltrosCatalogo`, `Notificacoes`.
-
-**Data binding.** Cada campo dos filtros e dos formulários está ligado ao estado
-(`value` + `onChange`). No catálogo, qualquer mudança no filtro dispara um novo pedido à API,
-com 300 ms de espera para não fazer um pedido por tecla escrita:
-
-```jsx
-useEffect(() => {
-  const temporizador = setTimeout(() => {
-    const parametros = new URLSearchParams();
-    if (filtro.q) parametros.set('q', filtro.q);
-    /* ... */
-    api.get(`/products?${parametros}`).then(setProdutos);
-  }, 300);
-  return () => clearTimeout(temporizador);
-}, [filtro]);
-```
-
-Todos os pedidos passam por `web/src/servicos/api.js`, que acrescenta o cabeçalho
-`Authorization: Bearer <token>`, trata o `204 No Content` e transforma os erros da API em
-exceções com a mensagem em português.
-
-### 9.1. Decisões de interface
-
-Decisões que valem por toda a aplicação:
-
-- **Avisos num sítio só.** `AvisosContext` guarda uma fila de avisos temporários e
-  qualquer página chama `sucesso()` ou `erro()`. O mesmo mecanismo serve os eventos que
-  chegam pelo WebSocket e as confirmações dos formulários, por isso não há páginas com
-  caixas de erro e outras em que o erro se perde.
-- **Janelas modais** para o que precisa de uma decisão consciente. Fecham com Escape ou
-  com um clique fora, e bloqueiam o deslize da página por trás. No telemóvel encostam ao
-  fundo do ecrã, que é onde o polegar chega.
-- **Validação dos formulários feita pela aplicação, não pelo browser.** O atributo
-  `required` do HTML trava o envio, mas a mensagem que mostra é uma caixa cinzenta do
-  browser e vem no idioma dele — numa página inteiramente em português aparecia *"Please
-  fill out this field"*. Os seis formulários da aplicação (entrar, registo, os dois perfis,
-  produtos e leilões) levam `noValidate`, e as mensagens passam a ser escritas por nós,
-  **por baixo do campo que está errado** e com a moldura a vermelho (`is-invalid` do
-  Bootstrap), mais um aviso a dizer que há campos por corrigir.
-
-  O `required` fica nos campos: já não trava o envio, mas continua a ser o que diz aos
-  leitores de ecrã que o campo é obrigatório. As regras de cada formulário são um objeto
-  `problemas` calculado a cada render — não é estado, é uma leitura do que lá está — e as
-  duas verificações que se repetiam (campo vazio, forma de um email) estão em
-  `servicos/validacao.js`, para a mesma regra não ser escrita de maneiras diferentes em
-  cada página. As mensagens só aparecem **depois da primeira tentativa de submeter**: um
-  formulário que abre todo vermelho está a ralhar com quem ainda não fez nada. E nenhum
-  botão fica desativado por causa da validação — um botão que não responde não explica o
-  que falta; o clique é que diz.
-- **Confirmação antes do que não se desfaz.** Apagar um produto, um leilão ou uma avaliação,
-  rejeitar o registo de um produtor, esvaziar o carrinho e agendar um leilão passam todos
-  pela mesma janela (`ModalConfirmar`), e cada uma diz o que vai acontecer em concreto —
-  o leilão avisa se já tem licitações, porque o histórico é apagado com ele. Agendar um
-  leilão não é destrutivo, mas é um compromisso: abre sozinho e qualquer comprador pode
-  licitar, por isso a confirmação mostra o resumo (lote, base, incremento, a que horas abre
-  e quando fecha) antes de criar seja o que for.
-- **Um mapa, duas utilizações.** O produtor marca onde fica de duas maneiras: escreve a morada
-  e o OpenStreetMap devolve o ponto (`servicos/geocodificar.js`, com a pesquisa limitada a
-  Portugal), ou arrasta o pin — que é o que salva uma quinta ao fim de um caminho de terra, onde
-  morada nenhuma acerta. Os dois caminhos acabam no mesmo sítio: duas coordenadas guardadas no
-  produtor. O concelho continua a existir à parte, porque é por ele que se filtra no catálogo,
-  e é ele que dá o ponto de partida do mapa.
-
-  O mesmo componente (`componentes/Mapa.jsx`) serve a página pública, aí só para ver — é o
-  `arrastavel` que muda. O pin é desenhado em CSS com um `divIcon`: as imagens que o Leaflet
-  traz são carregadas por um caminho relativo que o empacotador não reescreve e ficariam
-  partidas em produção.
-
-  A morada escrita é enviada para o openstreetmap.org, que é o que permite converter texto em
-  coordenadas. O resultado fica na nossa base de dados, por isso a pesquisa acontece uma vez,
-  quando o produtor a pede, e não a cada visita à página dele.
-
-- **Rodapé colado ao fundo**, com `#root` em `flex-column` e o conteúdo a crescer
-  (`flex: 1 0 auto`). Nas páginas curtas o rodapé fica no fundo do ecrã em vez de deixar
-  uma faixa branca por baixo.
-- **"Não há resultados" e "não foi possível carregar" são estados diferentes.** Quando o
-  servidor não responde, o catálogo mostra *"Não foi possível carregar o catálogo"* com um
-  botão de repetir, e não *"nenhum produto corresponde aos filtros"* — que seria mentira.
-  A distinção não é teórica: num alojamento gratuito o servidor adormece e demora perto de
-  um minuto a acordar, e nesse intervalo um visitante veria uma loja aparentemente vazia.
-  Pela mesma razão, o `fetch` que falha por falta de rede dá uma mensagem em português,
-  traduzida num sítio só (`servicos/api.js`), em vez do `Failed to fetch` do browser.
-
-### 9.2. A lista de concelhos
-
-A localidade deixou de ser um campo de texto livre. `web/src/dados/concelhos.js` tem os
-**308 concelhos de Portugal**, com o distrito e as coordenadas do centro, extraídos da
-Carta Administrativa Oficial de Portugal. O mesmo ficheiro serve três ecrãs: o registo de
-produtor, a página pública do produtor e os filtros do catálogo e da lista de produtores.
-
-Isto resolve três problemas de uma vez:
-
-- **A pesquisa bate sempre certo.** Como o nome gravado e o nome filtrado saem da mesma
-  lista, não há "ponte de lima" a falhar contra "Ponte de Lima".
-- **Ninguém escreve coordenadas.** O mapa da página do produtor usa as coordenadas do
-  concelho escolhido, em vez de obrigar o produtor a ir buscá-las ao Google Maps.
-- **O filtro usa correspondência exata**, e não `$regex`. Com expressão regular, filtrar
-  por "Porto" apanharia também "Porto de Mós" e "Porto Santo", e "Braga" apanharia
-  "Bragança". (O `$regex` continua a ser usado na pesquisa por nome e descrição, onde a
-  correspondência parcial é precisamente o que se quer.)
-
-Há ainda um pormenor que vale a pena saber: **dois concelhos chamam-se "Lagoa"**, um em
-Faro e outro nos Açores. Na lista aparecem os dois, cada um no seu distrito.
-
----
-
-## 10. API REST
-
-Recursos identificados por URI, verbo HTTP adequado e código de estado correto em cada resposta.
-
-| Método | Endpoint | Papel | Estado |
-| --- | --- | --- | --- |
-| POST | `/api/auth/registo` | — | 201 + `Location` |
-| POST | `/api/auth/login` | — | 200 / 401 |
-| GET · PUT | `/api/auth/me` | autenticado | 200 / 401 |
-| GET | `/api/products` | — | 200 |
-| POST | `/api/products` | produtor | 201 + `Location` |
-| GET | `/api/products/:id` | — | 200 / 404 |
-| PUT | `/api/products/:id` | produtor (dono) | 200 / 404 |
-| DELETE | `/api/products/:id` | produtor / admin | **204** / 404 |
-| GET | `/api/products/:id/reviews` | — | 200 |
-| GET | `/api/producers` | — | 200 |
-| GET | `/api/producers/:id` | — | 200 / 404 |
-| GET | `/api/producers/me/estatisticas` | produtor | 200 |
-| GET | `/api/orders` | comprador / produtor | 200 / 401 |
-| POST | `/api/orders` | comprador | 201 / 400 |
-| GET | `/api/orders/:id` | envolvidos / admin | 200 / 403 / 404 |
-| PATCH | `/api/orders/:id/estado` | produtor (dono) | 200 / 400 / 404 |
-| GET | `/api/auctions` | — | 200 |
-| POST | `/api/auctions` | produtor | 201 + `Location` |
-| GET | `/api/auctions/:id` | — | 200 / 404 |
-| DELETE | `/api/auctions/:id` | produtor / admin | 204 / 404 |
-| GET | `/api/auctions/:id/bids` | — | 200 |
-| GET · POST | `/api/reviews` (produto **ou** produtor) | — / comprador | 200 / 201 / 403 |
-| POST | `/api/reviews/:id/denunciar` | autenticado | 200 / 404 |
-| GET | `/api/admin/estatisticas` | admin | 200 / 403 |
-| GET | `/api/admin/produtores` | admin | 200 |
-| PATCH | `/api/admin/produtores/:id` | admin | 200 / 400 / 404 |
-| GET | `/api/admin/utilizadores` | admin | 200 |
-| GET | `/api/admin/encomendas` | admin | 200 |
-| GET · PATCH · DELETE | `/api/admin/reviews[/:id]` | admin | 200 / 204 / 404 |
-| POST | `/api/uploads` | produtor / admin | 201 / 400 |
-
-**Códigos de erro usados**: `400` dados inválidos, `401` token em falta ou inválido,
-`403` autenticado mas sem permissão, `404` recurso inexistente, `500` erro interno
-(tratado num middleware central em `app.js`, que converte os erros de validação do Mongoose
-em `400`).
-
-**Pesquisas com operadores do MongoDB** (`GET /api/products`):
-
-```js
-if (q) filtro.procura = { $regex: escaparRegex(normalizar(q)) };   // $regex
-if (precoMin || precoMax) {                           // intervalo com $gte / $lte
-  filtro.preco = {};
-  if (precoMin) filtro.preco.$gte = Number(precoMin);
-  if (precoMax) filtro.preco.$lte = Number(precoMax);
-}
-```
-
-Aquela primeira linha tem duas decisões atrás dela, e ambas vieram de defeitos
-encontrados a testar:
-
-**O campo `procura`.** Os produtos guardam o nome e a descrição numa terceira cópia, em
-minúsculas e sem acentos, mantida por um hook do schema. A pesquisa normaliza o termo da
-mesma maneira e procura aí. Numa aplicação portuguesa isto não é detalhe: metade dos
-nomes leva acento e quase ninguém os escreve no telemóvel — antes disto, procurar
-**"maca" não encontrava "Maçã Bravo de Esmolfe"**.
-
-O hook é `pre('validate')` e não `pre('save')` de propósito, porque o `insertMany` do seed
-valida os documentos mas não dispara os hooks de gravação. E o `PUT` de um produto passou
-a ler-alterar-gravar em vez de um `findOneAndUpdate` direto, senão o campo ficava preso ao
-nome antigo.
-
-**O escape.** O que o utilizador escreve é texto, não um padrão. Sem escapar, escrever
-`(` na caixa de pesquisa produzia uma expressão regular inválida e **a API respondia 500**;
-`.*` devolvia o catálogo inteiro; e um padrão como `a{1,99999}` podia pôr o servidor a
-trabalhar à toa. Hoje qualquer um destes devolve 200 com zero resultados, que é o que um
-utilizador espera de uma pesquisa por um parêntese.
-
-E `$lt` sobre datas em `GET /api/auctions?aTerminar=true` (leilões que terminam na próxima hora)
-e `$lt` sobre números nos alertas de stock baixo do produtor (`stock: { $lt: 5 }`).
-
----
-
-## 11. Modelo de dados MongoDB: embedding vs linking
-
-Seis coleções: `users`, `products`, `orders`, `auctions`, `bids`, `reviews`.
-
-A regra que segui: **embeber o que é sempre lido em conjunto e não cresce sem limite;
-referenciar o que é partilhado, muda com frequência ou cresce indefinidamente.**
-
-| Decisão | Porquê |
-| --- | --- |
-| **`orders.linhas` embebidas** | As linhas são poucas (uma encomenda tem 1 a 10 artigos), nunca são lidas sem a encomenda e nunca são partilhadas. Em cada linha guardo uma **cópia** de `nome` e `precoUnit`: se o produtor mudar o preço amanhã, a encomenda de hoje mantém o preço que o comprador pagou. |
-| **`orders.entrega.morada` copiada** | Pelo mesmo motivo. A morada entra na encomenda como texto, não como referência ao perfil do comprador: se ele se mudar para outra casa, as encomendas antigas continuam a dizer para onde foram entregues. Não há nada a juntar na leitura, e o histórico não se reescreve sozinho. |
-| **`orders.comprador` e `orders.produtor` referenciados** | São utilizadores partilhados por muitas encomendas e os seus dados mudam. Lidos com `.populate()` só quando são precisos. |
-| **`products.produtor` referenciado** | O mesmo produtor tem dezenas de produtos; duplicar a sua localidade e descrição em cada um obrigaria a reescrever todos os documentos a cada alteração. |
-| **`auctions.licitacaoAtual` embebido** | É um único valor (valor, comprador, nome), lido sempre com o leilão e escrito em cada licitação. Embebido, a validação e a escrita da licitação fazem-se **numa só operação atómica** — é o que garante a consistência do leilão. |
-| **`bids` em coleção própria (linking)** | O histórico de licitações cresce sem limite durante um leilão movimentado. Dentro do documento do leilão chegaria ao limite de 16 MB e tornaria cada leitura cara. |
-| **`reviews` em coleção própria (linking)** | Crescem sem limite e são moderadas pelo administrador de forma independente do produto. A mesma coleção guarda os dois tipos de avaliação: com `produto` preenchido é uma avaliação a um produto, com `produto` a `null` é ao produtor. Como o campo `produtor` está sempre preenchido, a página do produtor mostra as duas com uma única pesquisa. |
-| **`products.notaMedia` e `numAvaliacoes` desnormalizados** | O catálogo mostra a média em cada cartão; somar as avaliações em cada listagem seria caro. A média é recalculada quando uma avaliação é criada, escondida ou apagada. |
-| **Um único documento `users` para os 3 papéis** | Os campos de produtor (localidade, coordenadas, estado de aprovação) são opcionais. Evita uma coleção extra e uma junção em cada pedido de catálogo. |
-
-**Validação no schema** (Mongoose): `required` em todos os campos obrigatórios, `enum` em
-`papel`, `categoria`, `unidade`, `epoca`, `estado` e `aprovado`, `min` em preços, stock,
-quantidades e notas, `max: 5` na nota das avaliações, `unique` no email e `index` nas chaves
-estrangeiras mais consultadas.
-
-O `passwordHash` nunca sai da API: o método `toJSON` do `User` apaga-o de todas as respostas.
-
-### 11.1. As contas são feitas pelo MongoDB, não em JavaScript
-
-Os painéis mostram totais — volume de negócios, vendas entregues, média das avaliações.
-A primeira versão trazia os documentos todos para memória e somava-os com `reduce`:
-
-```js
-const encomendas = await Order.find();                       // TODAS as encomendas
-volumeNegocios: encomendas.reduce((s, e) => s + e.total, 0)
-```
-
-Com 16 encomendas ninguém nota. Com 100 000, a API tenta carregar a coleção inteira para
-responder a um número. A conta passou a ser feita onde os dados estão:
-
-```js
-const [encomendas] = await Order.aggregate([
-  { $group: { _id: null, quantas: { $sum: 1 }, volume: { $sum: '$total' } } },
-]);
-```
-
-Nos indicadores do produtor, uma única passagem conta as encomendas, conta as pendentes e
-soma as entregues, usando `$cond` para decidir o que entra em cada conta:
-
-```js
-{ $group: {
-    _id: null,
-    total: { $sum: 1 },
-    pendentes: { $sum: { $cond: [{ $eq: ['$estado', 'pendente'] }, 1, 0] } },
-    vendas:    { $sum: { $cond: [{ $eq: ['$estado', 'entregue'] }, '$total', 0] } },
-} }
-```
-
-A média das avaliações usa `$avg`, em vez de somar notas à mão.
-
-### 11.2. Índices, e a prova de que servem para alguma coisa
-
-Além dos índices nas chaves estrangeiras, há um **índice composto** para a consulta mais
-usada da aplicação — o catálogo filtrado por categoria e preço:
-
-```js
-productSchema.index({ categoria: 1, preco: 1 });
-```
-
-A ordem dos campos segue a regra **ESR**: primeiro o campo comparado por *igualdade*
-(`categoria`), depois o usado em *intervalo* e para *ordenar* (`preco`).
-
-Medido com `.explain('executionStats')` sobre `categoria = "Mel" e preco <= 8`, numa
-coleção de 28 produtos:
-
-| | Documentos lidos | Devolvidos |
-| --- | --- | --- |
-| Sem índice (`COLLSCAN`) | **28** | 2 |
-| Com índice (`IXSCAN`) | **2** | 2 |
-
-Sem índice o MongoDB lê a coleção toda e deita fora 26 documentos; com ele lê exatamente
-os dois que interessam. A proporção 1:1 entre chaves examinadas e documentos devolvidos é
-o sinal de que o índice cobre a consulta.
-
----
-
-## 12. Documentação Swagger
-
-A especificação está em `api/openapi.yaml` (OpenAPI 3.0.3) e cobre os **25 caminhos**, com
-todos os parâmetros de query, corpos de pedido, códigos de resposta e o cabeçalho `Location`
-nas criações.
-
-- `components.schemas`: `Utilizador`, `RespostaLogin`, `ProdutoInput`, `Produto`,
-  `LinhaEncomenda`, `Encomenda`, `Leilao`, `Licitacao`, `Avaliacao`, `Erro`.
-- `components.securitySchemes.bearerAuth`: `http` / `bearer` / `JWT`, aplicado com
-  `security: [{ bearerAuth: [] }]` em todos os endpoints protegidos.
-
-Publicada com `swagger-ui-express` em **<http://localhost:3000/api-docs>**:
-
-```js
-const openapi = YAML.load(path.join(__dirname, '..', 'openapi.yaml'));
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapi));
-```
-
-Para testar os endpoints protegidos no browser: fazer `POST /auth/login`, copiar o `token`
-da resposta e colá-lo no botão **Authorize**.
-
----
-
-## 13. Autenticação e segurança
-
-- **Passwords com hash** — `bcrypt` com 12 rondas (`bcrypt.hash(password, 12)`). A password em
-  claro nunca é guardada nem registada.
-- **JWT com expiração** — assinado com `JWT_SECRET` e válido 8 horas. O payload tem apenas
-  `id`, `papel` e `nome`, que é o que a API precisa para autorizar.
-- **Middleware por papel** (`api/src/middleware/auth.js`):
-
-  ```js
-  function auth(...papeis) {
-    return (req, res, next) => {
-      const token = (req.headers.authorization || '').replace('Bearer ', '');
-      if (!token) return res.status(401).json({ erro: 'Token em falta' });
-      try { req.user = jwt.verify(token, process.env.JWT_SECRET); }
-      catch { return res.status(401).json({ erro: 'Token inválido ou expirado' }); }
-      if (papeis.length && !papeis.includes(req.user.papel))
-        return res.status(403).json({ erro: 'Sem permissão' });
-      next();
-    };
-  }
-  ```
-
-  Usado como `auth('produtor')`, `auth('admin')`, `auth('comprador', 'produtor')`.
-
-- **Ser produtor não chega: tem de estar aprovado.** O papel diz o que a conta é, não se já
-  pode trabalhar. Um segundo middleware (`api/src/middleware/produtorAprovado.js`) protege
-  tudo o que um produtor cria ou altera — produtos, leilões e fotografias — e responde 403
-  enquanto o administrador não validar o registo:
-
-  ```js
-  router.post('/', autenticar('produtor'), produtorAprovado, async (req, res) => { … });
-  ```
-
-  O estado é lido da **base de dados** e não do token. O token é assinado no início da sessão
-  e não muda quando o administrador aprova: lê-lo daí obrigaria o produtor a sair e a voltar a
-  entrar para começar a vender. É uma consulta a mais por escrita, só nas escritas, e em troca
-  a aprovação tem efeito no instante seguinte.
-
-  No ecrã, a mesma regra faz desaparecer os formulários e os botões de editar e apagar: um
-  formulário que só serve para receber um erro é pior do que não estar lá. A regra que vale,
-  no entanto, é a do servidor — a interface apenas evita o caminho sem saída.
-
-- **Posse do recurso verificada no filtro da query**, não só pelo papel. Um produtor autenticado
-  não consegue editar o produto de outro porque o `_id` do dono faz parte do filtro:
-
-  ```js
-  Product.findOneAndUpdate({ _id: req.params.id, produtor: req.user.id }, alteracoes, { new: true });
-  ```
-
-  Se o produto não for dele, não há documento que corresponda e a API responde `404`.
-
-- **Campos não editáveis filtrados** — em `PUT /api/products/:id` os campos `produtor`,
-  `notaMedia` e `numAvaliacoes` são retirados do corpo antes de gravar, para o cliente não
-  poder transferir um produto para outro produtor nem falsificar a sua média.
-- **Preços lidos sempre da base de dados** — `POST /api/orders` ignora preços enviados pelo
-  cliente e usa os do documento do produto.
-- **Segredos em variáveis de ambiente** — `.env` está no `.gitignore`; o repositório só tem
-  `.env.example`.
-- **Upload de imagens restrito** — só `image/jpeg`, `png`, `webp` e `gif`, no máximo 3 MB,
-  com nome de ficheiro gerado pelo servidor (nunca o nome original do utilizador).
-- **HTTPS em produção** — fica a cargo da plataforma PaaS, que termina o TLS (ver secção 15).
-- **Cabeçalhos de segurança** — `helmet` acrescenta `X-Content-Type-Options: nosniff`,
-  `Referrer-Policy`, `X-Frame-Options`, HSTS e outros. Duas exceções deliberadas: a CSP
-  fica desligada porque o Swagger UI usa estilos e scripts inline, e a
-  `Cross-Origin-Resource-Policy` é `cross-origin` porque a SPA corre noutra origem e
-  precisa de carregar as imagens de `/uploads`.
-- **Limite de tentativas no login** — `express-rate-limit`, 10 tentativas **falhadas** por
-  IP em cada 15 minutos. O bcrypt torna cada tentativa lenta, mas é o atacante que decide
-  quantas faz; este limite é que lhe corta o ritmo. Só as falhadas contam
-  (`skipSuccessfulRequests`), por isso quem sabe a password nunca é incomodado — medido:
-  15 entradas corretas seguidas passam todas, 10 erradas esgotam a quota.
-
----
-
-## 14. Tempo real e consistência dos leilões
-
-### 14.1. Salas
-
-O Socket.io usa **o mesmo JWT da API**, enviado no handshake, mas a autenticação é
-*opcional*: quem não tiver sessão liga-se à mesma e acompanha os leilões, apenas fica sem
-`socket.user` e por isso não consegue licitar.
-
-```js
-io.use((socket, next) => {
-  const { token } = socket.handshake.auth || {};
-  socket.user = null;
-  if (token) {
-    try { socket.user = jwt.verify(token, process.env.JWT_SECRET); }
-    catch { /* token inválido: segue como visitante */ }
-  }
-  next();
-});
-```
-
-Três famílias de salas:
-
-- `leiloes` — sala única onde **todos** entram ao ligar-se. Mantém as listas de leilões
-  atualizadas em qualquer página (ver 14.4).
-- `leilao:<id>` — uma sala por leilão, em que o cliente entra com o evento `entrar` e sai com
-  `sair`. A presença (número de participantes) é recalculada ao entrar, ao sair e no evento
-  `disconnecting`.
-- `user:<id>` — sala pessoal, só para quem tem sessão. Recebe as notificações de encomendas,
-  de leilões ganhos/fechados e da validação do registo de produtor.
-
-### 14.2. O desafio técnico: duas licitações ao mesmo tempo
-
-Quando dois compradores licitam o mesmo valor quase no mesmo instante, o servidor tem de
-aceitar **apenas uma** e todos os clientes têm de ficar a ver o mesmo estado.
-
-A solução é não ler-e-depois-escrever. Toda a validação está **dentro do filtro** de um único
-`findOneAndUpdate`, por isso é o MongoDB que a aplica, de forma atómica, sobre o documento:
-
-```js
-const agora = new Date();
-const fimProlongado = new Date(agora.getTime() + PROLONGAMENTO_MS); // 30 segundos
-
-const leilao = await Auction.findOneAndUpdate(
-  {
-    _id: leilaoId,
-    estado: 'ativo',
-    terminaEm: { $gt: agora },
-    // valor >= licitacaoAtual.valor + incremento, avaliado no servidor
-    $expr: { $gte: [montante, { $add: ['$licitacaoAtual.valor', '$incremento'] }] },
-  },
-  {
-    $set: { licitacaoAtual: { valor: montante, comprador: socket.user.id, nome: socket.user.nome } },
-    $max: { terminaEm: fimProlongado },   // prolongamento automático, secção 14.8
-  },
-  { new: true }
-);
-
-if (!leilao) return socket.emit('recusada', 'Licitação recusada: valor demasiado baixo ou leilão terminado');
-
-await Bid.create({ leilao: leilaoId, comprador: socket.user.id, nome: socket.user.nome, valor: montante });
-io.to(`leilao:${leilaoId}`).emit('nova-licitacao', { licitacaoAtual: leilao.licitacaoAtual, licitacao });
-```
-
-Porque é que isto resolve o problema:
-
-1. A primeira licitação a chegar ao MongoDB encontra o documento no estado esperado, grava
-   e devolve o documento atualizado.
-2. A segunda chega logo a seguir, mas `licitacaoAtual.valor` **já subiu**, por isso a condição
-   `$expr` deixa de se verificar. Nenhum documento corresponde ao filtro, `findOneAndUpdate`
-   devolve `null` e a licitação é recusada — sem nunca chegar a escrever.
-3. O broadcast só acontece **depois** da escrita ter sido aceite, por isso todos os clientes da
-   sala recebem exatamente o mesmo estado, na mesma ordem.
-
-Se em vez disto o servidor lesse o leilão, comparasse o valor em JavaScript e só depois gravasse,
-as duas licitações podiam ler o mesmo valor antigo e ambas passariam na comparação — a segunda
-escrita sobrepunha-se à primeira e um comprador ficava com a licitação "perdida".
-
-Testado com dois clientes a enviar 65 € no mesmo instante: uma licitação foi aceite, a outra
-recebeu `recusada`, e o estado no servidor e nos dois clientes ficou igual.
-
-### 14.3. Os três estados de um leilão
-
-Um leilão não nasce aberto. Quem o cria escolhe **a que horas abre** — à hora e ao minuto,
-entre as 08:00 e as 18:00 do próprio dia — e quanto tempo dura a partir daí:
-
-```
-agendado  ──(comecaEm)──>  ativo  ──(terminaEm)──>  terminado
-```
-
-O tempo de espera não é um capricho: sem ele, um leilão de 10 minutos criado às 15h00
-estaria a meio antes de alguém dar por ele. Com o aviso, os compradores entram na sala
-antes de abrir e ficam a ver a contagem decrescente.
-
-O formulário envia o instante completo (`comecaEm`) e o servidor volta a verificá-lo:
-tem de faltar pelo menos um minuto, não pode ser dali a mais de 24 horas e a hora do dia
-tem de cair entre as 08:00 e as 18:00. Essa última é lida no **relógio do servidor**, não
-no de quem submete — é por isso que o serviço publicado corre com `TZ=Europe/Lisbon`.
-
-**As mudanças de estado são só do servidor.** Um `setInterval` de 3 em 3 segundos
-procura leilões agendados cuja hora chegou (`comecaEm: { $lte: agora }`) e ativos que
-passaram da hora (`terminaEm: { $lt: agora }`), muda-lhes o estado e avisa as salas.
-O cliente nunca decide que um leilão abriu: limita-se a mostrar o que recebe. É por isso
-que o relógio do computador de quem licita não tem qualquer influência.
-
-Licitar num leilão que ainda não abriu é impossível sem código extra, porque o filtro
-atómico da licitação já exige `estado: 'ativo'`.
-
-### 14.4. Tudo em tempo real, não só dentro da sala
-
-Além das salas por leilão, há uma sala `leiloes` onde **todos os clientes entram ao
-ligar-se**, com ou sem sessão iniciada. É ela que mantém vivas as *listas* de leilões —
-a página inicial, a lista de leilões, o painel do produtor e o do administrador:
-
-| Evento | Quando | O que o cliente faz |
-| --- | --- | --- |
-| `leilao-atualizado` | alguém licitou | corrige só esse leilão na lista |
-| `leiloes-mudaram` | um leilão abriu, fechou, nasceu ou foi apagado | volta a pedir a lista |
-
-A distinção importa: uma licitação só muda um valor, mas abrir ou fechar muda **a que
-lista o leilão pertence**, e aí não chega corrigir um número.
-
-No cliente isto está num hook, `useListaLeiloes`, por isso qualquer página fica em tempo
-real sem saber nada de WebSockets.
-
-A autenticação do socket passou a ser **opcional**: sem token o cliente liga-se na mesma
-e acompanha tudo, mas fica sem `socket.user` e o servidor recusa-lhe a licitação. Assim
-um visitante vê os leilões a mexer antes sequer de ter conta.
-
-### 14.5. O que uma licitação compromete (e onde entra o dinheiro)
-
-A plataforma **não tem pagamentos online**. Nem nas encomendas, nem nos leilões: o
-pagamento é sempre combinado diretamente com o produtor, no levantamento ou na entrega.
-Foi uma decisão deliberada — integrar um gateway de pagamentos traria obrigações legais e
-de segurança (dados de cartão, PCI-DSS, estornos) que estão muito para lá do âmbito do
-trabalho, e nenhum dos oito passos do enunciado o pede.
-
-Por isso, licitar não movimenta dinheiro: é um **compromisso de compra**. Quem tiver a
-licitação mais alta no fim do leilão fica comprometido a comprar o lote por esse valor, e
-o produtor contacta-o para combinar o resto. A interface diz isto em dois sítios — por
-baixo do formulário e na janela de confirmação — porque é precisamente a dúvida que um
-utilizador tem ao ver um botão que aumenta o valor em 25 €.
-
-Como não há dinheiro a mexer, licitar é um clique só: os atalhos (+5, +10, +25 acima do
-mínimo) enviam a licitação logo, sem passo de confirmação, que é o que se espera de um
-leilão em direto onde cada segundo conta.
-
-### 14.6. Relógio sincronizado
-
-O servidor envia apenas `terminaEm` (uma data absoluta). É cada cliente que calcula o tempo que
-falta, de segundo a segundo, no componente `Contador`. Assim não é preciso sincronizar
-contadores entre clientes: todos derivam o mesmo valor da mesma data.
-
-A unidade mostrada **afina à medida que o fim se aproxima**:
-
-| Falta | Mostra | Porquê |
-| --- | --- | --- |
-| mais de um dia | `2d 23h` | os segundos de um leilão que ainda dura dois dias não dizem nada |
-| entre 1 hora e 1 dia | `5h 07min` | o minuto chega para decidir se vale a pena voltar mais tarde |
-| menos de uma hora | `12:45` | aqui cada segundo conta, e é quando as licitações aparecem |
-
-O cálculo continua a ser feito ao segundo; o que muda é só o que se escreve no ecrã.
-
-### 14.7. Abertura e fecho automáticos
-
-Um `setInterval` de 3 segundos faz as duas passagens de estado:
-
-- **abre** os agendados cuja hora chegou (`comecaEm: { $lte: agora }`) e manda
-  `leilao-comecou` à sala, para a página passar de contagem para formulário sozinha;
-- **fecha** os ativos que passaram da hora (`terminaEm: { $lt: agora }`), marca-os como
-  `terminado` e avisa a sala, o vencedor (`leilao-ganho`) e o produtor (`leilao-fechado`).
-
-Em qualquer dos casos manda também `leiloes-mudaram` à sala `leiloes`, porque abrir ou
-fechar muda a que listas o leilão pertence.
-
-### 14.8. Prolongamento automático: ninguém ganha no último segundo
-
-Com um fim fixo, a melhor jogada para um comprador não é licitar o que o lote vale: é passar
-o leilão em silêncio e atirar o lance nos últimos segundos, quando já ninguém consegue
-responder. Chama-se *sniping*, e faz com que ganhe quem tem melhor ligação à internet, não
-quem ofereceu mais.
-
-A regra passou a ser: **um leilão nunca fecha com uma licitação feita há menos de 30
-segundos**. Licitar perto do fim empurra o fim para meio minuto depois dessa licitação, e o
-leilão só fecha quando passarem 30 segundos sem ninguém licitar.
-
-O que torna isto simples é um operador do MongoDB, o `$max`, que **só grava se o valor novo
-for maior do que o que lá está**:
-
-```js
-const agora = new Date();
-const fimProlongado = new Date(agora.getTime() + PROLONGAMENTO_MS); // 30 segundos
-
-await Auction.findOneAndUpdate(
-  filtro,                                  // o mesmo filtro da secção 14.2
-  {
-    $set: { licitacaoAtual: { /* ... */ } },
-    $max: { terminaEm: fimProlongado },
-  },
-  { new: true }
-);
-```
-
-Como `terminaEm` é uma data, "maior" quer dizer "mais tarde":
-
-| Quanto falta para o fim | `fimProlongado` é mais tarde? | Resultado |
-| --- | --- | --- |
-| 2 horas | não | o fim fica como estava |
-| 40 segundos | não | o fim fica como estava |
-| 5 segundos | sim | o fim passa a ser daqui a 30 segundos |
-
-E repare-se que **não é uma segunda escrita**: o prolongamento vai no mesmo
-`findOneAndUpdate` que valida e grava a licitação, por isso é tão atómico como ela. Se
-fossem duas escritas, havia uma janela em que o relógio do servidor (14.7) podia fechar o
-leilão entre aceitar a licitação e empurrar o fim.
-
-Como o `$max` pode ter gravado ou não, o servidor compara o que ficou no documento com o que
-propôs e diz à sala qual foi o caso:
-
-```js
-const prolongado = leilao.terminaEm.getTime() === fimProlongado.getTime();
-
-io.to(`leilao:${leilaoId}`).emit('nova-licitacao', {
-  licitacaoAtual: leilao.licitacaoAtual, terminaEm: leilao.terminaEm, prolongado, licitacao,
-});
-```
-
-No cliente não foi preciso temporizador nenhum: o `Contador` já tem o `terminaEm` nas
-dependências do seu `useEffect`, por isso basta o hook guardar a data nova para a contagem
-reiniciar sozinha em todos os ecrãs. O `prolongado` serve só para mostrar um aviso — ver a
-contagem **subir** sem explicação parece um erro a quem está na sala. O evento
-`leilao-atualizado` leva o mesmo `terminaEm`, para as listas acompanharem a sala.
-
-Testado com dois compradores ligados ao mesmo leilão: uma licitação a 10 minutos do fim não
-mexeu na data e o evento veio com `prolongado: false`; uma licitação a 5 segundos do fim
-empurrou o fim exatamente 30 segundos e os dois clientes receberam a mesma data nova; uma
-segunda licitação dentro da janela voltou a empurrar; e, sem mais licitações, o leilão fechou
-30 segundos depois da última, com o vencedor e o valor certos.
-
-### 14.9. Notificações: o aviso que passa e o sininho que fica
-
-Quando o produtor muda o estado de uma encomenda, a rota REST usa o `io` para avisar o comprador
-na sua sala pessoal:
-
-```js
-req.app.get('io').to(`user:${encomenda.comprador}`).emit('encomenda-atualizada', {
-  id: encomenda._id, estado: encomenda.estado, produtor: encomenda.produtor.nome,
-});
-```
-
-No cliente, a página "As minhas encomendas" ouve o mesmo evento e atualiza a lista sem
-recarregar; em paralelo, o `SocketContext` mostra um *toast*. Quando um comprador fecha uma
-encomenda, o produtor recebe `nova-encomenda` e o painel recarrega os indicadores.
-
-**O problema do aviso que passa.** O *toast* desaparece ao fim de segundos. Serve para quem
-está a olhar — e não serve para mais nada: quem estava noutro separador perdia a venda, a
-avaliação e o fim do leilão. Por isso cada evento da sala pessoal passou a ter dois destinos:
-o aviso, que passa, e o **sininho** no cabeçalho, que fica.
-
-```js
-const avisar = (texto, tipo, para) => {
-  notificar(texto, tipo);      // o aviso que passa
-  acrescentar(texto, para);    // a linha no sininho, que fica
-};
-```
-
-O que cada papel recebe:
-
-| Papel | Evento | O que aconteceu |
-| --- | --- | --- |
-| Comprador | `encomenda-atualizada` | a encomenda mudou de estado |
-| Comprador | `leilao-ganho` | ganhou um leilão |
-| Produtor | `nova-encomenda` | alguém comprou |
-| Produtor | `nova-avaliacao` | alguém avaliou um produto seu, ou a si |
-| Produtor | `leilao-fechado` | um leilão seu acabou — com quem ganhou e por quanto |
-| Produtor | `registo-validado` | o administrador aprovou ou rejeitou o registo |
-| Administrador | `avaliacao-denunciada` | há uma avaliação para moderar |
-
-As notificações ficam guardadas no browser, por utilizador (`notificacoes:<id>`), e cada uma
-leva o caminho da página que a resolve: a encomenda, a sala do leilão, as avaliações. Abrir o
-sininho é dar por lidas. Não é um histórico — guarda as 20 últimas e tem um botão de limpar.
-
-Duas consequências que não se veem à primeira:
-
-- O `registo-validado` não se limita a avisar: **corrige o utilizador da sessão**
-  (`atualizar((atual) => ({ ...atual, aprovado }))`). Sem isso, o produtor acabado de aprovar
-  via a mensagem e continuava sem os formulários, porque o estado do registo vinha do momento
-  em que iniciou a sessão.
-- A denúncia de uma avaliação é o único evento que não vai para uma sala pessoal: vai para a
-  sala `admins`, em que cada administrador entra ao ligar-se. O painel recarrega a lista de
-  moderação sem ninguém ter de recarregar a página.
-
----
-
-## 15. Deployment na Cloud
-
-Este passo era **opcional** no enunciado. A aplicação **está publicada** e a configuração está
-versionada no repositório, em `render.yaml` e `web/vercel.json` — não é uma intenção escrita no
-relatório, são ficheiros que as plataformas leem.
-
-| | Endereço |
-| --- | --- |
-| Aplicação (Vercel) | https://do-campo-a-mesa-six.vercel.app |
-| API (Render) | https://do-campo-a-mesa-api-1rju.onrender.com |
-| Documentação OpenAPI | https://do-campo-a-mesa-api-1rju.onrender.com/api-docs |
-
-Os sufixos `-six` e `-1rju` foram acrescentados pelas plataformas porque os nomes simples já
-estavam ocupados por outras pessoas — os subdomínios são partilhados por todos os utilizadores.
-
-**Modelo escolhido: PaaS + BaaS.**
-
-| Componente | Serviço | Modelo |
-| --- | --- | --- |
-| API REST + Socket.io | Render — *Web Service* (Node) | **PaaS** |
-| SPA React | Vercel | **PaaS** |
-| Base de dados | MongoDB Atlas (*tier* gratuito M0) | **BaaS** |
-| Imagens carregadas | disco do serviço (ver 15.6) | — |
-
-### 15.1 Porquê PaaS e não IaaS
-
-Numa IaaS (máquinas virtuais) seria preciso instalar e manter o sistema operativo, o Node, um
-proxy inverso, os certificados TLS e as atualizações de segurança. Nada disso é específico desta
-aplicação: é trabalho de operação que não acrescenta valor ao trabalho. Em PaaS entrega-se o
-código e a plataforma trata do *runtime*, do HTTPS, do balanceamento e do escalamento; em troca
-perde-se controlo sobre o ambiente, o que aqui não é limitação. A base de dados vai em BaaS pela
-mesma razão, com a vantagem extra de ter backups e réplicas já incluídos.
-
-### 15.2 Porquê Render e Vercel, e não Azure
-
-O primeiro plano era o Azure, por ser uma suite integrada: App Service para a API, Static Web
-Apps para a SPA e Blob Storage para as imagens. O **Azure for Students recusou a conta** — o
-domínio institucional não consta da lista de verificação académica da Microsoft — e a alternativa
-era uma subscrição paga com cartão associado.
-
-O Render e a Vercel dão exatamente o mesmo modelo de serviço (PaaS sobre o código, BaaS para a
-base de dados), com planos gratuitos e sem cartão. O que se perde é ter o armazenamento de
-objetos na mesma suite, que é a limitação descrita em 15.6.
-
-O que **não** se perdeu foi nenhuma linha de código. Toda a configuração vem de variáveis de
-ambiente, por isso mudar de fornecedor foi reconfigurar, não reprogramar — o que é, em si, o
-melhor argumento a favor do PaaS.
-
-### 15.3 O que está no repositório
-
-**`render.yaml`** descreve o serviço da API:
-
-| Chave | Valor | Porquê |
-| --- | --- | --- |
-| `rootDir` | `api` | o repositório tem a API e a SPA; o Render só constrói esta pasta |
-| `buildCommand` | `npm install` | não há passo de compilação: a API é CommonJS, corre como está |
-| `startCommand` | `npm start` | → `node src/server.js` |
-| `healthCheckPath` | `/api/health` | a rota já existia; o Render usa-a para saber se o serviço subiu |
-| `region` | `frankfurt` | o mais próximo, para a latência das licitações |
-
-Os segredos ficam marcados com `sync: false`: aparecem no painel do Render à espera de valor e
-**nunca entram no repositório**.
-
-A versão do Node não está aqui: está no `engines` do `package.json`, que tanto o Render como a
-Vercel leem. Fica num sítio só e vale também para quem clonar o repositório.
-
-**`web/vercel.json`** tem uma regra só:
-
-```json
-{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
-```
-
-É o que faz uma SPA funcionar num alojamento estático. O routing é do React Router, no browser:
-`/leiloes` não existe como ficheiro no servidor. Sem esta regra, abrir ou recarregar essa
-página diretamente devolveria 404 — a Vercel procuraria um ficheiro com esse nome. Com ela,
-qualquer endereço serve o `index.html` e é o React Router que decide o que mostrar.
-
-**Variáveis de ambiente:**
-
-| Onde | Variável | Valor |
-| --- | --- | --- |
-| Render | `MONGODB_URI` | URI do cluster do Atlas |
-| Render | `JWT_SECRET` | segredo novo, gerado só para produção |
-| Render | `JWT_EXPIRA` | `8h` |
-| Render | `CORS_ORIGIN` | endereço da SPA na Vercel |
-| Render | `TZ` | `Europe/Lisbon`, para o servidor validar as horas de abertura no fuso certo |
-| Vercel | `VITE_API_URL` | endereço da API no Render |
-
-### 15.4 Ordem de publicação
-
-Há uma dependência circular: a API precisa de saber o endereço da SPA (para o CORS) e a SPA
-precisa de saber o endereço da API. Resolve-se publicando primeiro e configurando depois:
-
-1. **Atlas** — criar o cluster, o utilizador da base de dados e autorizar `0.0.0.0/0` na lista
-   de IPs (o plano gratuito do Render não garante um IP fixo, por isso não há endereço para
-   restringir). Correr `npm run seed` uma vez, localmente, já com o `MONGODB_URI` do Atlas.
-2. **Render** — ligar o repositório; o `render.yaml` é lido automaticamente. Preencher
-   `MONGODB_URI` e `JWT_SECRET`. Fica com um endereço `…onrender.com`.
-3. **Vercel** — importar o repositório com a raiz em `web/` e definir `VITE_API_URL` com o
-   endereço do passo 2. Fica com um endereço `…vercel.app`.
-4. **Voltar ao Render** — definir `CORS_ORIGIN` com o endereço do passo 3. Só a partir daqui a
-   API deixa de aceitar qualquer origem (ver `api/src/origens.js`).
-
-### 15.5 Socket.io em produção
-
-Os *web services* do Render suportam WebSocket nativamente: não há nada para ativar — ao
-contrário do App Service do Azure, que exigia `--web-sockets-enabled true`. O cliente liga-se à
-mesma origem da API, e o CORS do Socket.io usa a mesma lista de `origensPermitidas()` das rotas
-REST, por isso configurar o `CORS_ORIGIN` cobre os dois.
-
-Uma característica do plano gratuito que convém saber de antemão: **o serviço adormece depois de
-15 minutos sem pedidos** e o primeiro pedido seguinte demora cerca de 50 segundos a responder,
-enquanto o contentor arranca. Não afeta o código nem os dados, mas afeta uma demonstração ao
-vivo — basta abrir a aplicação alguns minutos antes.
-
-### 15.6 Limitação conhecida: as imagens carregadas
-
-O enunciado sugere guardar as imagens num serviço de armazenamento de objetos (Blob Storage, S3,
-Cloud Storage). **Esta aplicação não o faz**, e vale a pena ser explícito sobre o que isso
-significa.
-
-As imagens são recebidas pelo Multer, gravadas em `api/uploads/` e servidas pelo Express
-(`app.use('/uploads', express.static(...))`).
-
-O `POST /api/uploads` devolve o **caminho** (`/uploads/ficheiro.png`) e não o endereço
-completo. A primeira versão devolvia o endereço completo e isso partia-se assim que a
-aplicação saía do computador: o endereço gravado era `http://localhost:3000/...`, e aberto
-no telemóvel o `localhost` passava a ser o próprio telemóvel — a imagem desaparecia.
-Guardando o caminho, é quem mostra a imagem que lhe junta o servidor (`imagemUrl()`, em
-`web/src/servicos/api.js`), e a mesma imagem funciona em localhost, na rede local e na
-versão publicada. Em desenvolvimento funciona bem. No plano gratuito
-do Render o disco é **efémero**: é recriado a cada publicação e a cada despertar do serviço, por
-isso uma fotografia carregada por um produtor desaparece mais tarde ou mais cedo.
-
-Os dados de demonstração não dependem disto: as imagens do `seed.js` são SVG em *data URI*,
-guardados dentro dos próprios documentos, e por isso sobrevivem a qualquer reinício.
-
-Ficou de fora por decisão de âmbito, para não acrescentar um SDK e um fornecedor de
-armazenamento a um trabalho que já tinha de ser todo explicável oralmente. O custo dessa decisão
-é pequeno e está localizado: o upload está isolado em `api/src/middleware/upload.js`, com cerca
-de vinte linhas. Trocar o `diskStorage` do Multer pelo cliente do fornecedor é mudar esse
-ficheiro e mais nada — o resto da aplicação continua a receber um URL e não sabe de onde vem.
-
----
-
-## 16. Dificuldades encontradas
-
-- **Licitações simultâneas.** Foi a parte que obrigou a mais cuidado. A primeira versão lia o
-  leilão, comparava o valor em JavaScript e só depois gravava — o que abre uma janela em que duas
-  licitações leem o mesmo valor antigo e ambas são aceites. Passar toda a validação para dentro
-  do filtro do `findOneAndUpdate`, com `$expr`, resolveu o problema sem transações nem bloqueios.
-- **Carrinho com vários produtores.** Como é o produtor que muda o estado da encomenda, uma
-  encomenda com produtos de três produtores não teria um estado que fizesse sentido. A solução
-  foi agrupar as linhas por produtor no `POST /api/orders` e criar uma encomenda por cada um.
-  O carrinho avisa o comprador quando isso vai acontecer.
-- **Stock em concorrência.** Dois compradores a levar a última unidade ao mesmo tempo tinham o
-  mesmo problema dos leilões. A retirada do stock é feita com
-  `findOneAndUpdate({ _id, stock: { $gte: quantidade } }, { $inc: { stock: -quantidade } })`,
-  que só grava se ainda houver stock.
-
-  Isso resolvia uma linha de cada vez, mas não o carrinho inteiro: o stock é retirado produto
-  a produto, e numa encomenda com **vários produtos** a segunda linha podia falhar depois de a
-  primeira já ter sido descontada. Nenhuma encomenda era criada e as unidades da primeira
-  linha desapareciam da plataforma. Agora as retiradas vão sendo registadas e, se alguma
-  linha falhar — ou se a criação da encomenda falhar —, são **devolvidas** com um `$inc`
-  positivo antes de responder, por isso ou a encomenda se faz toda ou o stock fica como
-  estava. É a alternativa simples às transações do MongoDB, que obrigariam a sessões e a um
-  *replica set*.
-
-  Comprovado com dois compradores a enviar, ao mesmo tempo, um carrinho com dois produtos em
-  que o segundo tinha só uma unidade: antes da correção, o primeiro produto descia **duas**
-  unidades e só se vendia uma; depois, desce uma e a recusada recebe
-  `"<produto>" esgotou-se entretanto`.
-- **Duas ligações WebSocket por utilizador.** Na primeira versão, o hook `useLeilao` abria uma
-  ligação própria, além da do contexto global — o que fazia o utilizador entrar duas vezes na
-  sala pessoal e receber cada notificação a dobrar. Passou a existir **uma só ligação**, criada
-  no `SocketContext` e usada pelo hook.
-- **Fugas de memória nos ouvintes.** Mudar de sala de leilão sem remover os ouvintes do socket
-  acumulava *handlers* e atualizava estado de componentes já desmontados. Todos os `useEffect`
-  que registam ouvintes devolvem agora uma função de limpeza com os `socket.off` correspondentes.
-- **Erros do Multer a darem 500.** Um ficheiro com formato inválido fazia o middleware atirar um
-  erro que chegava ao tratamento central como erro interno. Passou a ser apanhado no *callback*
-  do `upload.single` e convertido em `400` com a mensagem certa.
-
----
-
-## 17. Utilização de ferramentas de IA
-
-Conforme permitido pelo enunciado, foi usado um assistente de IA (Claude) no apoio à escrita de
-código repetitivo (schemas Mongoose, formulários, especificação OpenAPI), na revisão da lógica de
-concorrência dos leilões e na redacção deste relatório. Todas as decisões de arquitetura,
-modelação de dados e segurança foram revistas e validadas por mim, e o código foi testado
-ponta a ponta antes da entrega.
-
-**Bibliotecas de terceiros usadas** (todas declaradas em `api/package.json` e `web/package.json`):
-Express, Mongoose, Socket.io, jsonwebtoken, bcryptjs, cors, dotenv, swagger-ui-express, yamljs,
-multer, React, React Router, Bootstrap, SASS e socket.io-client.

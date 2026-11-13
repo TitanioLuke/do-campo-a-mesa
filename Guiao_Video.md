@@ -1,7 +1,16 @@
 # Guião do vídeo de demonstração
 
-Máximo **5 minutos**. O objetivo não é mostrar tudo — é mostrar o que distingue este
-trabalho: o tempo real e a consistência dos leilões.
+Máximo **5 minutos**, **sem narração**. Só imagem.
+
+Isso muda uma coisa importante: o que não se diz tem de **estar no ecrã tempo suficiente para
+se ler**. Por isso este guião tem pausas marcadas. Nos momentos que interessam, para o rato e
+conta até três antes de clicar outra vez.
+
+Duas regras que valem para o vídeo todo:
+
+- **Move o rato devagar e para onde queres que olhem.** É o teu único apontador.
+- **Nunca mudes de ecrã enquanto alguma coisa está a acontecer.** As notificações, a contagem
+  a saltar e o valor a mudar na outra janela precisam de ficar parados a serem vistos.
 
 ---
 
@@ -9,148 +18,174 @@ trabalho: o tempo real e a consistência dos leilões.
 
 | | |
 | --- | --- |
-| **Repor os dados** | `cd api && npm run seed` — põe os leilões a contar e as encomendas nos estados certos |
-| **Arrancar** | `cd api && npm run dev` e `cd web && npm run dev` em dois terminais |
-| **Aquecer** | Abrir a aplicação e o Swagger uma vez antes de gravar |
-| **Duas janelas** | Uma normal e uma anónima, lado a lado. É o que permite mostrar o tempo real |
+| **Repor os dados** | `cd api && npm run seed` |
+| **Arrancar** | `cd api && npm run dev` e `cd web && npm run dev`, em dois terminais |
+| **Aquecer** | Abrir a aplicação, o Swagger e o endereço publicado uma vez |
+| **Duas janelas** | Uma normal e uma anónima, lado a lado |
+| **Já com sessão** | Normal: `ana@dcm.pt`. Anónima: `bruno@dcm.pt`. Password `123456` |
+| **Separadores abertos** | Catálogo · Leilões · Painel do produtor · Administração · Swagger · endereço publicado |
 | **Esconder** | Barra de favoritos, notificações do sistema, separadores pessoais |
-| **Zoom do browser** | 110–125%, para o texto ler-se no vídeo |
+| **Zoom** | 125%, para o texto ler-se no vídeo |
 
-Contas (password `123456` em todas): `ana@dcm.pt` · `quinta@dcm.pt` · `admin@dcm.pt`
+### Títulos no ecrã (recomendado)
 
----
+Sem voz, oito cartões de texto de dois segundos entre as secções fazem toda a diferença —
+sem eles, quem vê não sabe para onde olhar. Chegam quatro palavras em cada:
 
-## 0:00 — 0:20 · Abertura
+`Catálogo e encomendas` · `Produtor, em tempo real` · `O mapa do produtor` ·
+`Leilões em direto` · `Licitações simultâneas` · `Prolongamento automático` ·
+`Administração` · `Publicado na cloud`
 
-Ecrã: página inicial, catálogo visível.
+### Quando carregar no REC
 
-> "Do Campo à Mesa é um mercado digital que liga pequenos produtores da região a
-> compradores e à restauração local. Tem catálogo, encomendas e leilões em direto.
-> Vou mostrar os quatro perfis, e deixo o leilão para o fim porque é a parte mais
-> interessante."
+O **Lote relâmpago de 10 queijos frescos** termina 5 minutos depois de semeares, e o
+prolongamento só se vê nos últimos 30 segundos.
 
----
+> Abre a lista de leilões e **começa a gravar quando o relâmpago marcar cerca de 3:30**.
+> Com esta ordem chegas à sala dele por volta dos 2:40, com uns 50 segundos no relógio.
 
-## 0:20 — 1:00 · Visitante
-
-1. Escrever **"mel"** na pesquisa → os resultados filtram enquanto escreves
-2. Abrir a **Localidade** → mostrar que são os 308 concelhos de Portugal
-3. Escolher **Bragança** → aparece *"Ainda não há produtores em Bragança"*
-4. Voltar a todas e abrir a página de um produtor → **mapa**, produtos e avaliações
-
-> "Os filtros são todos feitos no servidor, com `$regex` na pesquisa e `$gte` e `$lte`
-> no preço. A localidade sai de uma lista fixa dos concelhos, o que faz o nome gravado
-> e o nome filtrado serem sempre o mesmo — e dá ao mapa as coordenadas."
+Se falhares a janela, semeia outra vez e regrava só a parte dos leilões.
 
 ---
 
-## 1:00 — 1:40 · Comprador
+## 0:00 — 0:15 · Abertura
 
-1. Entrar como **ana@dcm.pt** (botão de demonstração)
-2. Juntar dois produtos de **produtores diferentes** ao carrinho
-3. Abrir o carrinho → ler em voz alta: *"Serão criadas 2 encomendas, uma por produtor"*
-4. Em **Entrega**, escolher *Entrega na morada* → a morada que a Ana guardou no registo
-   aparece já escolhida; apontar para a opção *Entregar noutra morada*
-5. Finalizar → vai para "As minhas encomendas"
+1. Página inicial, no topo.
+2. **Scroll lento** até aos leilões em direto e de volta ao cimo.
 
-> "O carrinho pode ter produtos de vários produtores, mas é o produtor que muda o estado
-> da encomenda. Por isso o servidor divide em uma encomenda por produtor. A morada vem do
-> perfil, mas é copiada para dentro da encomenda — se a Ana se mudar amanhã, as encomendas
-> antigas continuam a dizer para onde foram."
-
-**Deixa esta janela nas encomendas.** Vais precisar dela a seguir.
+Deixa ver: o cabeçalho, o cartaz e os três leilões a contar.
 
 ---
 
-## 1:40 — 2:20 · Tempo real nas encomendas
+## 0:15 — 1:00 · Catálogo e encomendas
 
-Na **segunda janela** (anónima), entrar como **quinta@dcm.pt** → Painel → Encomendas.
+1. Escreve **`maca`** na pesquisa — sem acento. **Pausa 2s** sobre a *Maçã Bravo de Esmolfe*.
+2. Limpa a pesquisa. Liga o filtro **Biológico**. **Pausa 2s.**
+3. Arrasta o filtro de **preço**. **Pausa 2s** — vê-se a lista a encolher.
+4. Vai à **Castanha da Padrela**. **Pausa 3s** com o rato parado sobre o botão desligado e a
+   etiqueta *Esgotado*.
+5. Junta ao carrinho **um produto da Quinta do Vale** e **um do Apiário do Minho**.
+6. Abre o **Carrinho**. **Pausa 2s** sobre a frase que diz que vão ser criadas duas encomendas.
+7. Em Entrega, escolhe **Entrega na morada**. **Pausa 3s** — aparecem as duas opções, a morada
+   do registo e uma nova.
+8. **Finalizar encomenda** → cai em *As minhas encomendas*. **Pausa 3s**.
 
-1. Pôr as duas janelas lado a lado
-2. Carregar em **"Marcar como confirmada"**
-3. **Apontar para a outra janela**: o aviso aparece e o estado muda sozinho
-
-> "Não recarreguei nada. O produtor muda o estado pela API, e a API usa o Socket.io para
-> avisar o comprador na sala pessoal dele."
-
----
-
-## 2:20 — 3:30 · Leilões (a parte mais importante)
-
-**Primeiro, o leilão agendado:**
-
-1. Ir a **Leilões → Por começar** → mostrar a contagem decrescente
-2. Entrar na sala → *"Este leilão ainda não abriu"*
-
-> "Quem cria o leilão escolhe a que horas abre, à hora e ao minuto, entre as 8 e as 18. É o
-> servidor que o abre, não o cliente."
-
-**Depois, o leilão a decorrer, com as duas janelas lado a lado:**
-
-3. Janela 1 (Ana) e janela 2 (outra conta de comprador) na mesma sala
-4. Licitar na janela 1 → **apontar para a janela 2**: o valor, o histórico e o nome mudam
-5. Mostrar o número de participantes a dizer 2
-6. Na janela 2, tentar licitar **abaixo do mínimo** → aparece o aviso de recusa
-
-> "Quando duas licitações chegam quase ao mesmo tempo, só uma pode ser aceite. A
-> validação está dentro do filtro de um `findOneAndUpdate`, por isso é o MongoDB que a
-> aplica de forma atómica. A segunda já não encontra o documento como esperava e é
-> recusada — sem nunca escrever."
-
-**Por fim, o prolongamento (o leilão relâmpago criado pelo `seed`):**
-
-7. Entrar no **Lote relâmpago de 10 queijos frescos** com as duas janelas
-8. Esperar que a contagem desça abaixo de **00:30** e licitar numa das janelas
-9. **Apontar para a contagem**: salta para 00:30 nas duas janelas e aparece o aviso amarelo
-
-> "Com um fim fixo, bastava esperar pelos últimos segundos e licitar quando já ninguém
-> conseguia responder. Agora, uma licitação feita nos últimos 30 segundos empurra o fim meio
-> minuto: o leilão só fecha depois de meio minuto sem licitações. E isso vai no mesmo
-> `findOneAndUpdate` da licitação, com o `$max` do MongoDB — não é uma segunda escrita."
-
-10. **Opcional, se sobrar tempo:** abrir uma terceira janela na lista de leilões, sem
-    sessão, e mostrar que o valor também muda lá
+O que tem de se ver: duas encomendas, uma por produtor, cada uma com os seus artigos.
 
 ---
 
-## 3:30 — 4:10 · Administrador
+## 1:00 — 1:35 · Produtor, em tempo real
 
-Entrar como **admin@dcm.pt**.
+1. Muda para o separador do **Painel do produtor**.
+2. **Pausa 3s** com o rato no **sininho**, que tem o contador a vermelho.
+3. **Abre o sininho.** **Pausa 3s** — lê-se a notificação da encomenda que acabaste de fazer.
+4. **Encomendas** → a encomenda nova, no topo, com os artigos.
+5. **Marcar como confirmada.** **Pausa 2s** sobre a etiqueta de estado a mudar.
+6. **Volta à janela da Ana**, sem clicar em nada. **Pausa 3s**: o estado já lá está mudado e a
+   notificação apareceu sozinha.
 
-1. **Resumo** → os indicadores e o estado dos serviços
-2. **Validar produtores** → aprovar o *Pomar das Caldas*
-3. **Moderar avaliações** → mostrar as opções manter / esconder / apagar
+Este é o momento mais importante da primeira metade. Não o cortes nem o apresses.
 
-> "O produtor fica pendente até ser validado, e os produtos dele não aparecem no
-> catálogo até lá."
-
----
-
-## 4:10 — 4:40 · API e telemóvel
-
-1. Abrir **localhost:3000/api-docs** → mostrar os endpoints agrupados e o botão *Authorize*
-2. Expandir um `POST` → mostrar o `201` e o cabeçalho `Location`
-3. Voltar à aplicação e **encolher a janela** até à largura de um telemóvel → a grelha
-   passa a uma coluna e o menu vira hambúrguer
+7. Volta ao produtor, separador **Resumo**. **Pausa 2s** sobre os indicadores e o alerta de
+   stock baixo a vermelho.
 
 ---
 
-## 4:40 — 5:00 · Fecho
+## 1:35 — 2:00 · O mapa do produtor
 
-> "A aplicação está toda em funcionamento: catálogo, encomendas, avaliações, leilões em
-> tempo real e o painel de administração. O código, o relatório e as instruções de
-> instalação estão no repositório. Obrigado."
+Separador **Página pública**.
+
+1. Escreve uma morada no campo. Carrega em **Procurar no mapa**. **Pausa 3s** — o mapa salta
+   para lá e o pin fica no sítio.
+2. **Arrasta o pin** devagar uns metros. **Pausa 2s** no fim do arrasto.
+3. **Guardar alterações** → **Pausa 1s** no aviso verde.
+4. **Ver a minha página** → **Pausa 3s** sobre o mapa e a morada na página pública.
 
 ---
 
-## O que **não** mostrar
+## 2:00 — 3:20 · Leilões
 
-- Código no editor — isso é para a defesa, não para o vídeo
-- Ecrãs de registo passo a passo — demoram e não acrescentam
-- O `npm run dev` a arrancar
-- Erros a serem corrigidos ao vivo
+### Licitações simultâneas — as duas janelas lado a lado
 
-## Se ficar acima dos 5 minutos
+1. Nas duas janelas, entra na sala do **Lote de 50 kg de Kiwi Hayward**.
+2. **Pausa 2s** com o rato sobre o **"2 na sala"**.
+3. Licita na janela da **Ana**.
+4. **Pausa 4s** com o rato a apontar para a **janela do Bruno** — o valor, o nome e o
+   histórico mudaram sozinhos.
+5. Na janela do **Bruno**, escreve um valor **abaixo do mínimo** e licita.
+6. **Pausa 3s** sobre o aviso vermelho da recusa.
 
-Corta por esta ordem: o Swagger (4:10), o administrador (3:30), o leilão agendado (2:20).
-**Nunca cortes a parte das duas janelas a licitar** — é o ponto alto do trabalho.
+### Prolongamento automático
+
+7. Nas duas janelas, entra no **Lote relâmpago de 10 queijos frescos**.
+8. **Pausa** a olhar para a contagem até descer abaixo de **00:30**.
+9. Licita numa das janelas.
+10. **Pausa 5s** sem tocar em nada: a contagem **salta para 00:30 nas duas janelas** e aparece
+    o aviso amarelo a explicar porquê.
+
+Este é o ponto alto do vídeo. Os 5 segundos parados são de propósito — é preciso ver o número
+a subir e o aviso a aparecer.
+
+11. Não esperes que o leilão acabe. Segue em frente.
+
+---
+
+## 3:20 — 3:55 · Administração
+
+Separador **Administração**.
+
+1. **Pausa 2s** sobre os indicadores do Resumo.
+2. **Validar produtores** — **pausa 2s**: vê-se o contador a **2** no separador.
+3. **Aprova** o *Pomar das Caldas*. **Pausa 2s** no aviso verde.
+4. **Rejeita** a *Vinha do Lima* → **pausa 3s na janela de confirmação**, para se ler o que ela
+   diz, e só depois confirma.
+5. **Moderar avaliações** → **pausa 4s** sobre a avaliação denunciada, para se ler o comentário
+   e perceber porque é que foi denunciada.
+6. **Esconder.** **Pausa 2s**.
+
+---
+
+## 3:55 — 4:30 · Publicado na cloud
+
+1. Separador com `https://do-campo-a-mesa-six.vercel.app`. **Pausa 3s** com o **endereço bem
+   visível na barra** — é essa a prova de que está publicado.
+2. Navega pelo catálogo e abre um leilão. **Pausa 2s**.
+3. Painel da **Vercel**: o deployment em *Ready*. **Pausa 3s**.
+4. Painel do **Render**: o serviço em *Live*. **Pausa 3s**.
+5. No Render, abre o separador **Environment** — **pausa 2s** sobre as variáveis com os valores
+   escondidos.
+
+---
+
+## 4:30 — 4:50 · Swagger
+
+1. Separador do **Swagger**, em `/api-docs`. **Pausa 3s** sobre a lista de caminhos.
+2. Abre o **`GET /products`** — é o que tem mais parâmetros à vista. **Pausa 4s** sobre a
+   lista de filtros e os códigos de resposta.
+3. Fecha e volta à página inicial da aplicação publicada. **Pausa 2s** e acaba.
+
+---
+
+## Se estiveres a ficar sem tempo
+
+Corta por esta ordem:
+
+1. O Swagger (4:30) — basta aparecer 3 segundos
+2. O mapa (1:35)
+3. Os indicadores e o stock baixo (1:00, passo 7)
+4. A pesquisa sem acentos (0:15, passo 1)
+
+**Nunca cortes:** a notificação a chegar ao produtor (1:00, passos 2–6), as duas janelas a
+licitar e o prolongamento. Sem voz, são essas as três coisas que se percebem sozinhas a olhar
+— e são as que valem mais.
+
+---
+
+## Se alguma coisa correr mal
+
+| Problema | O que fazer |
+| --- | --- |
+| O leilão relâmpago já acabou | `npm run seed` outra vez e regrava só a secção dos leilões |
+| O leilão agendado abriu a meio | Ignora, ou aproveita e deixa-o ver-se a abrir sozinho |
+| A aplicação publicada demora a abrir | O plano gratuito adormece ao fim de 15 min. Abre-a **antes** de gravar |
+| Uma notificação não chegou | O ponto ao lado do nome fica verde quando o WebSocket liga. Se estiver cinzento, a API caiu |

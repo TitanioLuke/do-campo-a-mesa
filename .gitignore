@@ -8,3 +8,7 @@ api/uploads/*
 
 # Documento do enunciado, nao faz parte do codigo entregue
 Do_Campo_a_Mesa_Enunciado.pdf
+
+# Ficheiros intermedios da conversao do relatorio
+Relatorio.html
+Relatorio.docx
