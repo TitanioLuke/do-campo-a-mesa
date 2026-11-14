@@ -12,3 +12,11 @@ Do_Campo_a_Mesa_Enunciado.pdf
 # Ficheiros intermedios da conversao do relatorio
 Relatorio.html
 Relatorio.docx
+
+# So o Relatorio.pdf e o README vao para o repositorio.
+# O resto da entrega (fonte do relatorio, guioes, apresentacao e video) fica local.
+Relatorio.md
+Guiao_Video.md
+Guiao_Apresentacao.md
+Apresentacao_Do_Campo_a_Mesa.pptx
+Do-Campo-A-Mesa.mp4

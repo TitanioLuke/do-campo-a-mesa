@@ -15,7 +15,7 @@ vários compradores a licitar em simultâneo.
 | **Aplicação** | https://do-campo-a-mesa-six.vercel.app |
 | **API** | https://do-campo-a-mesa-api-1rju.onrender.com |
 | **Documentação OpenAPI** | https://do-campo-a-mesa-api-1rju.onrender.com/api-docs |
-| **Relatório** | [`Relatorio.md`](Relatorio.md) — arquitetura e decisões técnicas |
+| **Relatório** | [`Relatorio.pdf`](Relatorio.pdf) — arquitetura e decisões técnicas |
 
 > O alojamento da API é gratuito e adormece ao fim de 15 minutos sem pedidos. O primeiro acesso
 > depois disso demora perto de um minuto a responder; os seguintes são imediatos.
@@ -46,7 +46,7 @@ vários compradores a licitar em simultâneo.
 | Upload de imagens | Multer (pasta local `uploads/`) |
 | Mapas | Leaflet + mosaicos do OpenStreetMap |
 
-As decisões por trás destas escolhas estão no [relatório](Relatorio.md).
+As decisões por trás destas escolhas estão no [relatório](Relatorio.pdf).
 
 ---
 
@@ -230,8 +230,7 @@ não foi validado: é o que permite demonstrar a aprovação no painel do admini
 
 ```
 TrabalhoPratico/
-├── Relatorio.md                  # Arquitetura e decisões técnicas
-├── Guiao_Video.md                # Guião da demonstração
+├── Relatorio.pdf                 # Arquitetura e decisões técnicas
 ├── render.yaml                   # Configuração do serviço no Render
 │
 ├── api/                          # API REST + servidor de WebSockets
